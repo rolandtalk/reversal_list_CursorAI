@@ -118,10 +118,11 @@
         .table-container {
             background: rgba(255, 255, 255, 0.03);
             border-radius: 12px;
-            overflow: hidden;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
         
         th {
             background: rgba(0, 217, 255, 0.1);
@@ -130,6 +131,7 @@
             font-weight: 600;
             color: #00d9ff;
             font-size: 0.85rem;
+            white-space: nowrap;
         }
         
         th.sortable {
@@ -147,6 +149,7 @@
             padding: 12px 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             font-size: 0.9rem;
+            white-space: nowrap;
         }
         
         tr:hover td { background: rgba(0, 217, 255, 0.05); }
@@ -173,6 +176,23 @@
             text-align: center;
             padding: 40px;
             color: #666;
+        }
+        
+        /* Mobile horizontal scroll hint */
+        @media (max-width: 768px) {
+            .table-container {
+                position: relative;
+            }
+            .table-container::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 30px;
+                background: linear-gradient(to right, transparent, rgba(26, 26, 46, 0.8));
+                pointer-events: none;
+            }
         }
     </style>
 </head>
@@ -215,15 +235,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th class="sortable" data-col="date" onclick="sortTable('date')">Date<span class="sort-icon">▼</span></th>
                         <th class="sortable" data-col="sym" onclick="sortTable('sym')">Sym<span class="sort-icon">▼</span></th>
                         <th>Shares</th>
                         <th>Cost</th>
                         <th>Price</th>
-                        <th class="sortable" data-col="change" onclick="sortTable('change')">Change %<span class="sort-icon">▼</span></th>
+                        <th class="sortable"data-col="change" onclick="sortTable('change')">Chg%<span class="sort-icon">▼</span></th>
                         <th class="sortable" data-col="value" onclick="sortTable('value')">Value<span class="sort-icon">▼</span></th>
                         <th class="sortable" data-col="gain" onclick="sortTable('gain')">Gain<span class="sort-icon">▼</span></th>
-                        <th class="sortable" data-col="gainPct" onclick="sortTable('gainPct')">Gain %<span class="sort-icon">▼</span></th>
+                        <th class="sortable" data-col="gainPct" onclick="sortTable('gainPct')">Gain%<span class="sort-icon">▼</span></th>
+                        <th class="sortable" data-col="date" onclick="sortTable('date')">Date<span class="sort-icon">▼</span></th>
                         <th></th>
                     </tr>
                 </thead>
@@ -410,7 +430,7 @@
             document.getElementById('gain-amount').className = gainClass;
             document.getElementById('gain-amount').textContent = (totalGain >= 0 ? '+' : '') + '$' + formatNumber(totalGain, 0);
             document.getElementById('gain-percent').className = gainClass;
-            document.getElementById('gain-percent').textContent = ` (${totalGainPercent >= 0 ? '+' : ''}${formatNumber(totalGainPercent)}%)`;
+            document.getElementById('gain-percent').textContent = ` (${totalGainPercent >= 0 ? '+' : ''}${Math.round(totalGainPercent)}%)`;
         }
         
         function renderRows() {
@@ -423,26 +443,26 @@
                     const gainClass = item.gain >= 0 ? 'positive' : 'negative';
                     rows.push(`
                         <tr>
-                            <td>${formatDateDisplay(item.date)}</td>
                             <td class="sym-cell">${item.sym}</td>
                             <td>${item.shares}</td>
                             <td>$${formatNumber(item.cost)}</td>
                             <td>$${formatNumber(item.price)}</td>
-                            <td class="${changeClass}">${item.change >= 0 ? '+' : ''}${formatNumber(item.change)}%</td>
-                            <td>$${formatNumber(item.value)}</td>
-                            <td class="${gainClass}">${item.gain >= 0 ? '+' : ''}$${formatNumber(item.gain)}</td>
-                            <td class="${gainClass}">${item.gainPct >= 0 ? '+' : ''}${formatNumber(item.gainPct)}%</td>
+                            <td class="${changeClass}">${item.change >= 0 ? '+' : ''}${Math.round(item.change)}%</td>
+                            <td>$${formatNumber(item.value, 0)}</td>
+                            <td class="${gainClass}">${item.gain >= 0 ? '+' : ''}$${Math.round(item.gain)}</td>
+                            <td class="${gainClass}">${item.gainPct >= 0 ? '+' : ''}${Math.round(item.gainPct)}%</td>
+                            <td>${formatDateDisplay(item.date)}</td>
                             <td><button class="delete-btn" onclick="removePosition('${item.sym}')">×</button></td>
                         </tr>
                     `);
                 } else {
                     rows.push(`
                         <tr>
-                            <td>${formatDateDisplay(item.date)}</td>
                             <td class="sym-cell">${item.sym}</td>
                             <td>${item.shares}</td>
                             <td>$${formatNumber(item.cost)}</td>
                             <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                            <td>${formatDateDisplay(item.date)}</td>
                             <td><button class="delete-btn" onclick="removePosition('${item.sym}')">×</button></td>
                         </tr>
                     `);
