@@ -510,17 +510,12 @@
             await renderTable();
         }
         
-        // Initial load - load from localStorage first, then fetch fresh data in background
+        // Initial load - only show cached data from localStorage (no loading)
         (async () => {
             loadFromLocalStorage();
-            // Render cached data first for immediate display
             if (positions.length > 0) {
                 await renderTable();
             }
-            // Then fetch fresh data in background
-            await loadPositions();
-            saveToLocalStorage();
-            await renderTable();
         })();
     </script>
 </body>
