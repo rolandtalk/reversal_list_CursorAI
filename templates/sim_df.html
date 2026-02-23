@@ -45,6 +45,19 @@
         
         .back-btn:hover { opacity: 0.9; }
         
+        .refresh-btn {
+            background: linear-gradient(135deg, #ff9500, #ff5e3a);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-right: 8px;
+        }
+        
+        .refresh-btn:hover { opacity: 0.9; }
+        
         .summary {
             background: rgba(255, 149, 0, 0.1);
             border-radius: 12px;
@@ -200,7 +213,10 @@
     <div class="container">
         <header>
             <h1>SIM DF</h1>
-            <a href="/" class="back-btn">返回主頁</a>
+            <div style="display: flex; align-items: center;">
+                <button class="refresh-btn" onclick="refreshTable()" title="重新整理">&#8635;</button>
+                <a href="/" class="back-btn">返回主頁</a>
+            </div>
         </header>
         
         <div class="summary">
@@ -468,11 +484,17 @@
             tbody.innerHTML = rows.join('');
         }
         
-        // Initial load
-        (async () => {
+        // Refresh function - call this to reload data
+        async function refreshTable() {
             await loadPositions();
             await renderTable();
-        })();
+        }
+        
+        // Initial load - don't auto-load, wait for user to click refresh
+        // (async () => {
+        //     await loadPositions();
+        //     await renderTable();
+        // })();
     </script>
 </body>
 </html>
