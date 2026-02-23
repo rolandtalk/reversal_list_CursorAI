@@ -331,13 +331,6 @@
             font-family: 'SF Mono', Monaco, 'Courier New', monospace;
         }
         
-        /* DG column width constraint for mobile */
-        td:nth-child(2), th:nth-child(2) {
-            width: 28px;
-            max-width: 28px;
-            text-align: center;
-        }
-        
         .positive { color: #00ff88; }
         .negative { color: #ff4757; }
         .neutral { color: #888; }
@@ -461,6 +454,14 @@
         .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
         .legend-triangle { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid #ff4757; }
         
+        /* Mobile optimization */
+        @media (max-width: 600px) {
+            th { padding: 10px 4px; font-size: 0.8rem; }
+            td { padding: 10px 4px; font-size: 0.8rem; }
+            th .sort-btn { gap: 2px; }
+            .sym-cell { font-size: 0.75rem; }
+        }
+        
         @media (max-width: 900px) {
             .side-panel { width: 100%; right: -100%; }
             .main-content.panel-open { margin-right: 0; }
@@ -516,7 +517,7 @@
                         <tr>
                             <td colspan="8" class="loading">
                                 <div class="loading-spinner"></div>
-                                <p>正在載入數據，請稍候...</p>
+<p>正在載入數據，請稍候...</p>
                             </td>
                         </tr>
                     </tbody>
