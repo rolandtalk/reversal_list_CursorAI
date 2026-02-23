@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIM RH - 投資組合模擬</title>
+    <title>SIM DF - 投資組合模擬</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -26,14 +26,14 @@
         
         h1 {
             font-size: 1.8rem;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            background: linear-gradient(90deg, #ff9500, #ff5e3a);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         
         .back-btn {
-            background: linear-gradient(135deg, #00d9ff, #0099cc);
+            background: linear-gradient(135deg, #ff9500, #ff5e3a);
             border: none;
             color: white;
             padding: 8px 16px;
@@ -46,7 +46,7 @@
         .back-btn:hover { opacity: 0.9; }
         
         .summary {
-            background: rgba(0, 217, 255, 0.1);
+            background: rgba(255, 149, 0, 0.1);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
@@ -90,7 +90,7 @@
         
         .form-group input {
             padding: 10px 12px;
-            border: 2px solid rgba(0, 217, 255, 0.3);
+            border: 2px solid rgba(255, 149, 0, 0.3);
             border-radius: 6px;
             background: rgba(0, 0, 0, 0.3);
             color: #fff;
@@ -100,15 +100,15 @@
         
         .form-group input:focus {
             outline: none;
-            border-color: #00d9ff;
+            border-color: #ff9500;
         }
         
         .add-btn {
             padding: 10px 20px;
-            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            background: linear-gradient(135deg, #ff9500, #ff5e3a);
             border: none;
             border-radius: 6px;
-            color: #000;
+            color: #fff;
             font-weight: 600;
             cursor: pointer;
         }
@@ -125,11 +125,11 @@
         table { width: 100%; border-collapse: collapse; min-width: 700px; }
         
         th {
-            background: rgba(0, 217, 255, 0.1);
+            background: rgba(255, 149, 0, 0.1);
             padding: 12px 10px;
             text-align: left;
             font-weight: 600;
-            color: #00d9ff;
+            color: #ff9500;
             font-size: 0.85rem;
             white-space: nowrap;
         }
@@ -139,7 +139,7 @@
             user-select: none;
         }
         
-        th.sortable:hover { background: rgba(0, 217, 255, 0.2); }
+        th.sortable:hover { background: rgba(255, 149, 0, 0.2); }
         th.sorted { color: #00ff88; }
         th .sort-icon { opacity: 0.4; margin-left: 4px; }
         th.sorted .sort-icon { opacity: 1; }
@@ -152,11 +152,11 @@
             white-space: nowrap;
         }
         
-        tr:hover td { background: rgba(0, 217, 255, 0.05); }
+        tr:hover td { background: rgba(255, 149, 0, 0.05); }
         
         .sym-cell {
             font-weight: 700;
-            color: #00d9ff;
+            color: #ff9500;
             font-family: 'SF Mono', Monaco, monospace;
         }
         
@@ -199,7 +199,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>SIM RH</h1>
+            <h1>SIM DF</h1>
             <a href="/" class="back-btn">返回主頁</a>
         </header>
         
@@ -207,7 +207,7 @@
             <div class="total-value" id="total-value">$0.00</div>
             <div class="total-gain" id="total-gain">
                 <span id="gain-amount">$0.00</span>
-                <span id="gain-percent">(0.00%)</span>
+                <span id="gain-percent">(0%)</span>
             </div>
         </div>
         
@@ -239,7 +239,7 @@
                         <th>Shares</th>
                         <th>Cost</th>
                         <th>Price</th>
-                        <th class="sortable"data-col="change" onclick="sortTable('change')">Chg%<span class="sort-icon">▼</span></th>
+                        <th class="sortable" data-col="change" onclick="sortTable('change')">Chg%<span class="sort-icon">▼</span></th>
                         <th class="sortable" data-col="value" onclick="sortTable('value')">Value<span class="sort-icon">▼</span></th>
                         <th class="sortable" data-col="gain" onclick="sortTable('gain')">Gain<span class="sort-icon">▼</span></th>
                         <th class="sortable" data-col="gainPct" onclick="sortTable('gainPct')">Gain%<span class="sort-icon">▼</span></th>
@@ -269,9 +269,7 @@
         
         function formatDateDisplay(dateStr) {
             if (!dateStr) return '-';
-            // If already MMMDD format
             if (dateStr.match(/^[A-Za-z]{3}\d{2}$/)) return dateStr;
-            // Convert YYMMDD to MMMDD
             if (dateStr.length === 6 && /^\d{6}$/.test(dateStr)) {
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 const mm = parseInt(dateStr.slice(2, 4), 10);
@@ -281,7 +279,6 @@
             return dateStr;
         }
         
-        // Set default date on page load
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('input-date').value = getTodayYYMMDD();
         });
@@ -315,7 +312,7 @@
         
         async function loadPositions() {
             try {
-                const response = await fetch('/api/sim/positions');
+                const response = await fetch('/api/sim/df/positions');
                 const data = await response.json();
                 positions = data.map(p => ({ sym: p.symbol, shares: p.shares, cost: p.cost, date: p.buy_date || '' }));
             } catch (e) {
@@ -352,7 +349,7 @@
             }
             
             try {
-                await fetch('/api/sim/positions', {
+                await fetch('/api/sim/df/positions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ symbol: sym, shares, cost, buy_date: date })
@@ -373,7 +370,7 @@
         
         async function removePosition(sym) {
             try {
-                await fetch(`/api/sim/positions/${sym}`, { method: 'DELETE' });
+                await fetch(`/api/sim/df/positions/${sym}`, { method: 'DELETE' });
                 positions = positions.filter(p => p.sym !== sym);
                 await renderTable();
             } catch (e) {
@@ -392,7 +389,7 @@
                 tbody.innerHTML = '<tr><td colspan="10" class="empty-msg">尚無持倉，請新增股票</td></tr>';
                 document.getElementById('total-value').textContent = '$0.00';
                 document.getElementById('gain-amount').textContent = '$0.00';
-                document.getElementById('gain-percent').textContent = '(0.00%)';
+                document.getElementById('gain-percent').textContent = '(0%)';
                 return;
             }
             
