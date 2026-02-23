@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股票反折點分析</title>
+    <title>Reversal Alert</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <style>
@@ -472,30 +472,29 @@
     <div class="main-content" id="main-content">
         <div class="container">
             <header>
-                <h1>📈 股票反折點分析</h1>
-                <p class="subtitle">基於 MA3 移動平均線的反折點偵測系統 | 點擊股票查看圖表</p>
+                <h1>Reversal Alert</h1>
+                <p class="subtitle">MA3 Reversal Point Detection System | Click stock to view chart</p>
             </header>
             
             <div class="controls">
                 <div class="toolbar">
-                    <button class="icon-btn" onclick="fetchData()" title="重新整理">
+                    <button class="icon-btn" onclick="fetchData()" title="Refresh">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M23 4v6h-6M1 20v-6h6"/>
                             <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                         </svg>
                     </button>
-                    <div class="toolbar-divider"></div>
-                    <a href="/sim" class="sim-btn">SIM</a>
                     <button class="manage-btn" onclick="openModal()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 5v14M5 12h14"/>
                         </svg>
-                        管理
+                        Manage
                     </button>
                 </div>
+                <a href="/sim" class="sim-btn">SIM</a>
                 <div class="stats">
-                    <div class="stat-item">數量: <span class="stat-value" id="total-count">-</span></div>
-                    <div class="stat-item">更新: <span class="stat-value" id="update-time">-</span></div>
+                    <div class="stat-item">Count: <span class="stat-value" id="total-count">-</span></div>
+                    <div class="stat-item">Updated: <span class="stat-value" id="update-time">-</span></div>
                 </div>
             </div>
             
@@ -517,7 +516,7 @@
                         <tr>
                             <td colspan="8" class="loading">
                                 <div class="loading-spinner"></div>
-<p>正在載入數據，請稍候...</p>
+                                <p>Loading data...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -530,15 +529,15 @@
     <div class="modal" id="symbol-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <span class="modal-title">管理股票清單</span>
+                <span class="modal-title">Manage Watchlist</span>
                 <button class="modal-close" onclick="closeModal()">✕</button>
             </div>
             <div id="modal-message" class="message"></div>
             <div class="symbol-input-group">
-                <input type="text" class="symbol-input" id="new-symbol" placeholder="輸入股票代碼 (如: AAPL)" maxlength="10">
-                <button class="add-btn" onclick="addSymbol()">新增</button>
+                <input type="text" class="symbol-input" id="new-symbol" placeholder="Enter symbol (e.g. AAPL)" maxlength="10">
+                <button class="add-btn" onclick="addSymbol()">Add</button>
             </div>
-            <p style="color: #888; margin-bottom: 10px; font-size: 0.9rem;">點擊 × 移除股票</p>
+            <p style="color: #888; margin-bottom: 10px; font-size: 0.9rem;">Click × to remove</p>
             <div class="symbol-list" id="symbol-list"></div>
         </div>
     </div>
@@ -553,32 +552,32 @@
             <div class="chart-container">
                 <div class="chart-loading" id="chart-loading">
                     <div class="loading-spinner"></div>
-                    <p>載入圖表中...</p>
+                    <p>Loading chart...</p>
                 </div>
                 <canvas id="priceChart" style="display: none;"></canvas>
             </div>
             
             <div style="margin-bottom: 6px;">
-                <div class="legend-item"><div class="legend-color" style="background: #00d9ff;"></div><span>收盤價</span></div>
+                <div class="legend-item"><div class="legend-color" style="background: #00d9ff;"></div><span>Close</span></div>
                 <div class="legend-item"><div class="legend-color" style="background: #ff9f43;"></div><span>MA3</span></div>
-                <div class="legend-item"><div class="legend-triangle"></div><span>反折點</span></div>
+                <div class="legend-item"><div class="legend-triangle"></div><span>Reversal</span></div>
             </div>
             
             <div class="stock-info" id="stock-info">
                 <div class="info-row">
-                    <span class="info-label">反折點數量</span>
+                    <span class="info-label">Reversal Points</span>
                     <span class="info-value" id="info-reversals">-</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">最近反折點</span>
+                    <span class="info-label">Last Reversal</span>
                     <span class="info-value" id="info-last-reversal">-</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">反折點價格</span>
+                    <span class="info-label">Reversal Price</span>
                     <span class="info-value" id="info-reversal-price">-</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">當前價格</span>
+                    <span class="info-label">Current Price</span>
                     <span class="info-value" id="info-current-price">-</span>
                 </div>
             </div>
@@ -589,7 +588,7 @@
                     <polyline points="15 3 21 3 21 9"/>
                     <line x1="10" y1="14" x2="21" y2="3"/>
                 </svg>
-                前往 CNBC
+                View on CNBC
             </a>
         </div>
     </div>
@@ -625,7 +624,7 @@
             const tbody = document.getElementById('table-body');
             
             if (stockData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="loading"><p>沒有數據</p></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="loading"><p>No data</p></td></tr>`;
                 return;
             }
             
@@ -679,18 +678,18 @@
             const tbody = document.getElementById('table-body');
             
             btn.disabled = true;
-            tbody.innerHTML = `<tr><td colspan="8" class="loading"><div class="loading-spinner"></div><p>正在載入數據...</p></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="loading"><div class="loading-spinner"></div><p>Loading data...</p></td></tr>`;
             
             try {
                 const response = await fetch('/api/data');
                 stockData = await response.json();
                 
                 document.getElementById('total-count').textContent = stockData.length;
-                document.getElementById('update-time').textContent = new Date().toLocaleTimeString('zh-TW');
+                document.getElementById('update-time').textContent = new Date().toLocaleTimeString('en-US');
                 
                 sortData(currentSort.column);
             } catch (error) {
-                tbody.innerHTML = `<tr><td colspan="8" class="loading"><p style="color: #ff4757;">載入失敗: ${error.message}</p></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="loading"><p style="color: #ff4757;">Load failed: ${error.message}</p></td></tr>`;
             } finally {
                 btn.disabled = false;
             }
@@ -740,14 +739,14 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showMessage(`已新增 ${symbol}`, 'success');
+                    showMessage(`Added ${symbol}`, 'success');
                     input.value = '';
                     await fetchSymbols();
                 } else {
                     showMessage(data.error, 'error');
                 }
             } catch (error) {
-                showMessage('新增失敗', 'error');
+                showMessage('Add failed', 'error');
             }
         }
 
@@ -762,13 +761,13 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showMessage(`已移除 ${symbol}`, 'success');
+                    showMessage(`Removed ${symbol}`, 'success');
                     await fetchSymbols();
                 } else {
                     showMessage(data.error, 'error');
                 }
             } catch (error) {
-                showMessage('移除失敗', 'error');
+                showMessage('Remove failed', 'error');
             }
         }
 
@@ -816,7 +815,7 @@
                 chartLoading.style.display = 'none';
                 chartCanvas.style.display = 'block';
             } catch (error) {
-                chartLoading.innerHTML = `<p style="color: #ff4757;">載入圖表失敗</p>`;
+                chartLoading.innerHTML = `<p style="color: #ff4757;">Load chart failed</p>`;
             }
         }
 
@@ -835,7 +834,7 @@
                     labels: data.dates,
                     datasets: [
                         {
-                            label: '收盤價',
+                            label: 'Close',
                             data: data.prices,
                             borderColor: '#00d9ff',
                             backgroundColor: 'rgba(0, 217, 255, 0.1)',
@@ -856,7 +855,7 @@
                             borderDash: [5, 5]
                         },
                         {
-                            label: '反折點',
+                            label: 'Reversal',
                             data: reversalData,
                             borderColor: '#ff4757',
                             backgroundColor: '#ff4757',
