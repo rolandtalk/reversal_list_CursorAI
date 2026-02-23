@@ -384,6 +384,7 @@
             document.getElementById('input-cost').value = '';
             document.getElementById('input-date').value = getTodayYYMMDD();
             
+            saveToLocalStorage();
             await renderTable();
         }
         
@@ -391,6 +392,7 @@
             try {
                 await fetch(`/api/sim/positions/${sym}`, { method: 'DELETE' });
                 positions = positions.filter(p => p.sym !== sym);
+                saveToLocalStorage();
                 await renderTable();
             } catch (e) {
                 alert('刪除失敗');
@@ -487,13 +489,42 @@
             tbody.innerHTML = rows.join('');
         }
         
+        // Save positions to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('sim_rh_positions', JSON.stringify(positions));
+        }
+        
+        // Load positions from localStorage
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('sim_rh_positions');
+            if (saved) {
+                try {
+                    positions = JSON.parse(saved);
+                } catch (e) {
+                    positions = [];
+                }
+            }
+        }
+        
         // Refresh function - call this to reload data
         async function refreshTable() {
             await loadPositions();
+            saveToLocalStorage();
             await renderTable();
         }
         
-        // Initial load - don't auto-load, wait for user to click refresh button
+        // Initial load - load from localStorage first, then fetch fresh data in background
+        (async () => {
+            loadFromLocalStorage();
+            // Render cached data first for immediate display
+            if (positions.length > 0) {
+                await renderTable();
+            }
+            // Then fetch fresh data in background
+            await loadPositions();
+            saveToLocalStorage();
+            await renderTable();
+        })();
     </script>
 </body>
 </html>
