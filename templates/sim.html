@@ -493,11 +493,7 @@
             await renderTable();
         }
         
-        // Initial load - auto load positions when page loads
-        (async () => {
-            await loadPositions();
-            await renderTable();
-        })();
+        // Initial load - don't auto-load, wait for user to click refresh button
     </script>
 </body>
 </html>
