@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="{{ base_url }}{{ request.path }}">
     <title>Reversal Alert</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
@@ -478,7 +479,7 @@
             
             <div class="controls">
                 <div class="toolbar">
-                    <button class="icon-btn" onclick="fetchData()" title="Refresh">
+                    <button class="icon-btn" onclick="fetchData(true)" title="Refresh">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M23 4v6h-6M1 20v-6h6"/>
                             <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
@@ -632,7 +633,7 @@
             tbody.innerHTML = stockData.map(row => `
                 <tr onclick="showChart('${row.sym}')" class="${selectedSymbol === row.sym ? 'selected' : ''}" data-symbol="${row.sym}">
                     <td class="sym-cell">${row.sym}</td>
-                    <td>${row.dg}</td>
+                    <td>${row.dg != null ? row.dg : '-'}</td>
                     <td>${formatValue(row.gg)}</td>
                     <td>${formatRSI(row.rsi)}</td>
                     <td>${formatValue(row.d1)}</td>
@@ -665,16 +666,32 @@
                     return currentSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
                 }
                 
-                valA = parseFloat(valA) || 0;
-                valB = parseFloat(valB) || 0;
-                
-                return currentSort.direction === 'asc' ? valA - valB : valB - valA;
+                const numOr = (v) => {
+                    if (v === null || v === undefined) return null;
+                    const n = parseFloat(v);
+                    return Number.isFinite(n) ? n : null;
+                };
+                valA = numOr(valA);
+                valB = numOr(valB);
+                const nullLastAsc = (x, y) => {
+                    if (x === null && y === null) return 0;
+                    if (x === null) return 1;
+                    if (y === null) return -1;
+                    return x - y;
+                };
+                const nullLastDesc = (x, y) => {
+                    if (x === null && y === null) return 0;
+                    if (x === null) return 1;
+                    if (y === null) return -1;
+                    return y - x;
+                };
+                return currentSort.direction === 'asc' ? nullLastAsc(valA, valB) : nullLastDesc(valA, valB);
             });
             
             renderTable();
         }
 
-        async function fetchData() {
+        async function fetchData(forceRefresh = false) {
             const btn = document.querySelector('.icon-btn');
             const tbody = document.getElementById('table-body');
             
@@ -682,7 +699,8 @@
             tbody.innerHTML = `<tr><td colspan="8" class="loading"><div class="loading-spinner"></div><p>Loading data...</p></td></tr>`;
             
             try {
-                const response = await fetch('/api/data');
+                const url = forceRefresh ? '/api/data?refresh=1' : '/api/data';
+                const response = await fetch(url);
                 stockData = await response.json();
                 
                 document.getElementById('total-count').textContent = stockData.length;

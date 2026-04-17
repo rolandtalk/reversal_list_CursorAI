@@ -31,6 +31,15 @@ SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'sb_publishable_BgGQTZmkECmAwRAOM6
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# This deployment's public URL (dupe repo — avoid confusion with production)
+APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://reversalX.up.railway.app')
+
+
+@app.context_processor
+def inject_base_url():
+    return {'base_url': APP_BASE_URL}
+
+
 # Default symbol list (used for initial setup)
 DEFAULT_SYMBOLS = [
     "AAPL", "ABBV", "ACHR", "ADBE", "ADSK", "AFRM", "AIG", "ALB", "AMAT", "AMD", "AMZN",
@@ -99,6 +108,31 @@ def calculate_rsi(prices, period=14):
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
+def _placeholder_result(sym):
+    """Row when a symbol is in DB but Yahoo/reversal pipeline has no row yet."""
+    return {
+        'sym': sym,
+        'dg': None,
+        'gg': None,
+        'rsi': None,
+        'd1': None,
+        'd3': None,
+        'd5': None,
+        'd20': None,
+    }
+
+
+def merge_missing_symbols(rows, symbols):
+    """Ensure every configured symbol appears at least once (placeholders last)."""
+    have = {r['sym'] for r in rows}
+    out = list(rows)
+    for sym in symbols:
+        if sym not in have:
+            out.append(_placeholder_result(sym))
+    out.sort(key=lambda x: (x['dg'] is None, float(x['dg']) if x['dg'] is not None else 0.0))
+    return out
+
+
 def batch_calculate_all(symbols):
     """Batch download and calculate all symbols at once - MUCH faster"""
     try:
@@ -109,7 +143,10 @@ def batch_calculate_all(symbols):
         for symbol in symbols:
             try:
                 if len(symbols) == 1:
-                    df = data
+                    if isinstance(data.columns, pd.MultiIndex):
+                        df = data[symbol].copy() if symbol in data.columns.get_level_values(0) else None
+                    else:
+                        df = data
                 else:
                     df = data[symbol] if symbol in data.columns.get_level_values(0) else None
                 
@@ -399,20 +436,26 @@ def get_data():
     """Fetch all symbol data with batch download"""
     global DATA_CACHE
     
-    # Check cache
     now = time.time()
-    if DATA_CACHE['data'] and (now - DATA_CACHE['timestamp']) < CACHE_TTL:
-        print("Returning cached data")
-        return jsonify(DATA_CACHE['data'])
-    
-    print("Fetching data with batch download...")
+    force_refresh = request.args.get('refresh', '').lower() in ('1', 'true', 'yes')
     symbols = load_symbols()
-    
+
+    # Serve cache when fresh, but merge in any symbols added since last fetch
+    if (
+        not force_refresh
+        and DATA_CACHE['data']
+        and (now - DATA_CACHE['timestamp']) < CACHE_TTL
+    ):
+        print("Returning cached data (merged with current symbol list)")
+        merged = merge_missing_symbols(DATA_CACHE['data'], symbols)
+        return jsonify(merged)
+
+    print("Fetching data with batch download...")
     try:
         results = batch_calculate_all(symbols)
-        results.sort(key=lambda x: x['dg'])
-        print(f"Got {len(results)} results")
-        
+        results = merge_missing_symbols(results, symbols)
+        print(f"Got {len(results)} results ({len(symbols)} symbols configured)")
+
         DATA_CACHE = {'data': results, 'timestamp': now}
         return jsonify(results)
         
