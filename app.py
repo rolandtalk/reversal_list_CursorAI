@@ -43,7 +43,7 @@ LOCAL_SYMBOL_OVERRIDES_PATH = os.path.join(app.root_path, 'symbols_local_overrid
 _SHEETS_SERVICE = None
 
 # This deployment's public URL (dupe repo — avoid confusion with production)
-APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://reversalX.up.railway.app')
+APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://reversal.up.railway.app')
 
 
 @app.context_processor
