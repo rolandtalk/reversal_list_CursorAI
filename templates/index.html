@@ -192,7 +192,7 @@
 
         table {
             width: 100%;
-            min-width: 760px;
+            min-width: 720px;
             border-collapse: collapse;
         }
 
@@ -216,6 +216,10 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
+        }
+
+        .label-short {
+            display: none;
         }
 
         th .sort-icon {
@@ -619,14 +623,44 @@
                 padding-left: 2px;
             }
 
+            .table-container {
+                border-radius: 20px;
+            }
+
+            .table-scroll {
+                overflow-x: hidden;
+            }
+
+            table {
+                min-width: 100%;
+                table-layout: fixed;
+            }
+
             th {
-                padding: 15px 10px;
-                font-size: 0.88rem;
+                padding: 12px 1px;
+                font-size: 0.78rem;
+                letter-spacing: 0;
             }
 
             td {
-                padding: 17px 10px;
-                font-size: 0.92rem;
+                padding: 14px 1px;
+                font-size: 0.82rem;
+            }
+
+            th .sort-btn {
+                gap: 2px;
+            }
+
+            .label-full {
+                display: none;
+            }
+
+            .label-short {
+                display: inline;
+            }
+
+            .sym-cell {
+                font-size: 0.88rem;
             }
 
             .panel-content {
@@ -682,14 +716,14 @@
                     <table id="stock-table">
                         <thead>
                             <tr>
-                                <th data-column="sym"><span class="sort-btn">SYM <span class="sort-icon">▼</span></span></th>
-                                <th data-column="dg"><span class="sort-btn">DG <span class="sort-icon">▼</span></span></th>
-                                <th data-column="gg"><span class="sort-btn">GG% <span class="sort-icon">▼</span></span></th>
-                                <th data-column="rsi"><span class="sort-btn">RSI <span class="sort-icon">▼</span></span></th>
-                                <th data-column="d1"><span class="sort-btn">1D% <span class="sort-icon">▼</span></span></th>
-                                <th data-column="d3"><span class="sort-btn">3D% <span class="sort-icon">▼</span></span></th>
-                                <th data-column="d5"><span class="sort-btn">5D% <span class="sort-icon">▼</span></span></th>
-                                <th data-column="d20"><span class="sort-btn">20D% <span class="sort-icon">▼</span></span></th>
+                                <th data-column="sym"><span class="sort-btn"><span class="label-full">SYM</span><span class="label-short">S</span> <span class="sort-icon">▼</span></span></th>
+                                <th data-column="dg"><span class="sort-btn"><span class="label-full">DG</span><span class="label-short">DG</span> <span class="sort-icon">▼</span></span></th>
+                                <th data-column="gg"><span class="sort-btn"><span class="label-full">GG%</span><span class="label-short">GG</span> <span class="sort-icon">▼</span></span></th>
+                                <th data-column="rsi"><span class="sort-btn"><span class="label-full">RSI</span><span class="label-short">R</span> <span class="sort-icon">▼</span></span></th>
+                                <th data-column="d1"><span class="sort-btn"><span class="label-full">1D%</span><span class="label-short">1D</span> <span class="sort-icon">▼</span></span></th>
+                                <th data-column="d3"><span class="sort-btn"><span class="label-full">3D%</span><span class="label-short">3D</span> <span class="sort-icon">▼</span></span></th>
+                                <th data-column="d5"><span class="sort-btn"><span class="label-full">5D%</span><span class="label-short">5D</span> <span class="sort-icon">▼</span></span></th>
+                                <th data-column="d20"><span class="sort-btn"><span class="label-full">20D%</span><span class="label-short">20D</span> <span class="sort-icon">▼</span></span></th>
                             </tr>
                         </thead>
                         <tbody id="table-body">
