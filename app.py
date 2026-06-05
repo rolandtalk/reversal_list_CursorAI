@@ -3,7 +3,7 @@ Stock Reversal Point Analysis Web App
 Based on MA3 reversal point detection algorithm
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, redirect
 from flask_cors import CORS
 import yfinance as yf
 import pandas as pd
@@ -466,20 +466,20 @@ def get_data():
 
 @app.route('/sim')
 def sim_page():
-    """Redirect to SIM RH page"""
+    """Render the universal SIM portfolio page"""
     return render_template('sim.html')
 
 
 @app.route('/sim/rh')
 def sim_rh_page():
-    """Render SIM RH portfolio page"""
-    return render_template('sim.html')
+    """Redirect the retired RH page to the single SIM portfolio"""
+    return redirect('/sim')
 
 
 @app.route('/sim/df')
 def sim_df_page():
-    """Render SIM DF portfolio page"""
-    return render_template('sim_df.html')
+    """Redirect the retired DF page to the single SIM portfolio"""
+    return redirect('/sim')
 
 
 @app.route('/api/sim/price/<symbol>')
@@ -558,55 +558,6 @@ def delete_sim_position(symbol):
     except Exception as e:
         print(f"Error deleting SIM position: {e}")
         return jsonify({'error': str(e)}), 500
-
-
-# SIM DF Portfolio API endpoints
-@app.route('/api/sim/df/positions', methods=['GET'])
-def get_sim_df_positions():
-    """Get all SIM DF positions from Supabase"""
-    try:
-        response = supabase.table('sim_positions_df').select('*').execute()
-        return jsonify(response.data if response.data else [])
-    except Exception as e:
-        print(f"Error getting SIM DF positions: {e}")
-        return jsonify([])
-
-
-@app.route('/api/sim/df/positions', methods=['POST'])
-def add_sim_df_position():
-    """Add or update a SIM DF position"""
-    data = request.get_json()
-    symbol = data.get('symbol', '').upper().strip()
-    shares = data.get('shares')
-    cost = data.get('cost')
-    buy_date = data.get('buy_date', '')
-    
-    if not symbol or shares is None or cost is None:
-        return jsonify({'error': 'Missing required fields'}), 400
-    
-    try:
-        supabase.table('sim_positions_df').upsert({
-            'symbol': symbol,
-            'shares': float(shares),
-            'cost': float(cost),
-            'buy_date': buy_date
-        }).execute()
-        return jsonify({'success': True})
-    except Exception as e:
-        print(f"Error adding SIM DF position: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/sim/df/positions/<symbol>', methods=['DELETE'])
-def delete_sim_df_position(symbol):
-    """Delete a SIM DF position"""
-    try:
-        supabase.table('sim_positions_df').delete().eq('symbol', symbol.upper()).execute()
-        return jsonify({'success': True})
-    except Exception as e:
-        print(f"Error deleting SIM DF position: {e}")
-        return jsonify({'error': str(e)}), 500
-
 
 if __name__ == '__main__':
     print(f"Starting server with {len(load_symbols())} symbols...")

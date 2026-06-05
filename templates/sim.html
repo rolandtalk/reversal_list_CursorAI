@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="canonical" href="{{ base_url }}{{ request.path }}">
-    <title>SIM RH - 投資組合模擬</title>
+    <title>SIM - Portfolio</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -213,7 +213,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>SIM RH</h1>
+            <h1>SIM</h1>
             <div style="display: flex; align-items: center;">
                 <button class="refresh-btn" onclick="refreshTable()" title="重新整理">&#8635;</button>
                 <a href="/" class="back-btn">返回主頁</a>
@@ -333,11 +333,13 @@
         async function loadPositions() {
             try {
                 const response = await fetch('/api/sim/positions');
+                if (!response.ok) throw new Error('Failed to load SIM positions');
                 const data = await response.json();
                 positions = data.map(p => ({ sym: p.symbol, shares: p.shares, cost: p.cost, date: p.buy_date || '' }));
+                return true;
             } catch (e) {
                 console.error('Error loading positions:', e);
-                positions = [];
+                return false;
             }
         }
         
@@ -369,11 +371,12 @@
             }
             
             try {
-                await fetch('/api/sim/positions', {
+                const response = await fetch('/api/sim/positions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ symbol: sym, shares, cost, buy_date: date })
                 });
+                if (!response.ok) throw new Error('Failed to save SIM position');
                 positions.push({ sym, shares, cost, date });
             } catch (e) {
                 alert('新增失敗');
@@ -391,7 +394,8 @@
         
         async function removePosition(sym) {
             try {
-                await fetch(`/api/sim/positions/${sym}`, { method: 'DELETE' });
+                const response = await fetch(`/api/sim/positions/${sym}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Failed to delete SIM position');
                 positions = positions.filter(p => p.sym !== sym);
                 saveToLocalStorage();
                 await renderTable();
@@ -492,12 +496,14 @@
         
         // Save positions to localStorage
         function saveToLocalStorage() {
-            localStorage.setItem('sim_rh_positions', JSON.stringify(positions));
+            localStorage.setItem('sim_positions', JSON.stringify(positions));
+            localStorage.removeItem('sim_rh_positions');
+            localStorage.removeItem('sim_df_positions');
         }
         
-        // Load positions from localStorage
+        // Load positions from localStorage only if the universal Supabase load fails.
         function loadFromLocalStorage() {
-            const saved = localStorage.getItem('sim_rh_positions');
+            const saved = localStorage.getItem('sim_positions') || localStorage.getItem('sim_rh_positions');
             if (saved) {
                 try {
                     positions = JSON.parse(saved);
@@ -509,17 +515,17 @@
         
         // Refresh function - call this to reload data
         async function refreshTable() {
-            await loadPositions();
-            saveToLocalStorage();
+            const loaded = await loadPositions();
+            if (loaded) saveToLocalStorage();
             await renderTable();
         }
         
-        // Initial load - only show cached data from localStorage (no loading)
+        // Initial load: Supabase is the source of truth; local cache is only fallback.
         (async () => {
-            loadFromLocalStorage();
-            if (positions.length > 0) {
-                await renderTable();
-            }
+            const loaded = await loadPositions();
+            if (!loaded) loadFromLocalStorage();
+            saveToLocalStorage();
+            await renderTable();
         })();
     </script>
 </body>
