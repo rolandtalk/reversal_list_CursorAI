@@ -3,4 +3,5 @@ flask-cors>=4.0.0
 yfinance>=0.2.36
 pandas>=2.0.0
 gunicorn>=21.0.0
-supabase>=2.0.0
+google-api-python-client>=2.132.0
+google-auth>=2.30.0

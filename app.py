@@ -7,16 +7,17 @@ from flask import Flask, render_template, jsonify, request, redirect
 from flask_cors import CORS
 import yfinance as yf
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+import json
 import os
+import time
+import urllib.parse
+import urllib.request
 import warnings
 warnings.filterwarnings('ignore')
 
-# Supabase
-from supabase import create_client, Client
-import time
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
@@ -25,11 +26,21 @@ CORS(app)
 DATA_CACHE = {'data': None, 'timestamp': 0}
 CACHE_TTL = 300  # 5 minutes
 
-# Supabase configuration
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://pggshikvapdnukpzoznk.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'sb_publishable_BgGQTZmkECmAwRAOM6Bmig_uTafg82R')
+# Google Sheets configuration
+GOOGLE_SHEET_ID = os.environ.get('GOOGLE_SHEET_ID', '1Rq-qt_rg6JiGX63xOcr2pvR-HWoILhL2fqeOrrO37Og')
+GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON', '').strip()
+GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE', '').strip()
+GOOGLE_APPS_SCRIPT_WEB_APP_URL = os.environ.get('GOOGLE_APPS_SCRIPT_WEB_APP_URL', '').strip()
+GOOGLE_APPS_SCRIPT_SHARED_SECRET = os.environ.get('GOOGLE_APPS_SCRIPT_SHARED_SECRET', '').strip()
+GOOGLE_SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SYMBOLS_SHEET = 'symbols'
+SIM_POSITIONS_SHEET = 'sim_positions'
+SETTINGS_SHEET = 'settings'
+AUDIT_LOG_SHEET = 'audit_log'
+LOCAL_SYMBOL_OVERRIDES_PATH = os.path.join(app.root_path, 'symbols_local_overrides.json')
+
+_SHEETS_SERVICE = None
 
 # This deployment's public URL (dupe repo — avoid confusion with production)
 APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://reversalX.up.railway.app')
@@ -38,6 +49,271 @@ APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://reversalX.up.railway.app'
 @app.context_processor
 def inject_base_url():
     return {'base_url': APP_BASE_URL}
+
+
+def _today_iso():
+    return datetime.now().strftime('%Y-%m-%d')
+
+
+def _now_iso():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'y'}
+
+
+def _build_sheets_service():
+    if GOOGLE_SERVICE_ACCOUNT_JSON:
+        credentials = service_account.Credentials.from_service_account_info(
+            json.loads(GOOGLE_SERVICE_ACCOUNT_JSON),
+            scopes=GOOGLE_SCOPES,
+        )
+        return build('sheets', 'v4', credentials=credentials, cache_discovery=False)
+
+    if GOOGLE_SERVICE_ACCOUNT_FILE:
+        credentials = service_account.Credentials.from_service_account_file(
+            GOOGLE_SERVICE_ACCOUNT_FILE,
+            scopes=GOOGLE_SCOPES,
+        )
+        return build('sheets', 'v4', credentials=credentials, cache_discovery=False)
+
+    return None
+
+
+def get_sheets_service():
+    global _SHEETS_SERVICE
+
+    if _SHEETS_SERVICE is None:
+        _SHEETS_SERVICE = _build_sheets_service()
+
+    return _SHEETS_SERVICE
+
+
+def has_sheet_write_access():
+    return get_sheets_service() is not None
+
+
+def has_apps_script_write_access():
+    return bool(GOOGLE_APPS_SCRIPT_WEB_APP_URL)
+
+
+def has_shared_sheet_write_access():
+    return has_sheet_write_access() or has_apps_script_write_access()
+
+
+def get_write_mode():
+    if has_sheet_write_access():
+        return 'service_account'
+    if has_apps_script_write_access():
+        return 'apps_script'
+    return 'local_overrides'
+
+
+def write_access_error_message():
+    return 'Shared Google Sheet writes are not configured. Local add/remove still works in this runtime. For universal shared writes, set GOOGLE_APPS_SCRIPT_WEB_APP_URL.'
+
+
+def _column_letter(index):
+    result = ''
+    while index > 0:
+        index, remainder = divmod(index - 1, 26)
+        result = chr(65 + remainder) + result
+    return result
+
+
+def _normalize_row(values, width):
+    row = list(values[:width])
+    if len(row) < width:
+        row.extend([''] * (width - len(row)))
+    return row
+
+
+def _fetch_sheet_rows_api(sheet_name):
+    service = get_sheets_service()
+    if service is None:
+        return None
+
+    response = service.spreadsheets().values().get(
+        spreadsheetId=GOOGLE_SHEET_ID,
+        range=f'{sheet_name}!A:Z',
+    ).execute()
+    return response.get('values', [])
+
+
+def _open_url_with_retries(url, attempts=3, delay=0.5):
+    last_error = None
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(url) as response:
+                return response.read().decode('utf-8')
+        except Exception as e:
+            last_error = e
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay * (attempt + 1))
+    raise last_error
+
+
+def _parse_gviz_response(text):
+    prefix = 'google.visualization.Query.setResponse('
+    start = text.find(prefix)
+    end = text.rfind(');')
+    if start == -1 or end == -1:
+        raise ValueError('Unexpected Google visualization payload')
+    payload = text[start + len(prefix):end]
+    return json.loads(payload)
+
+
+def _fetch_sheet_rows_public(sheet_name):
+    params = urllib.parse.urlencode({
+        'sheet': sheet_name,
+        'tqx': 'out:json',
+    })
+    url = f'https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq?{params}'
+    payload = _open_url_with_retries(url)
+    table = _parse_gviz_response(payload).get('table', {})
+    headers = [col.get('label') or col.get('id') or '' for col in table.get('cols', [])]
+    rows = [headers]
+    for row in table.get('rows', []):
+        values = []
+        for cell in row.get('c', []):
+            values.append('' if cell is None else cell.get('v', ''))
+        rows.append(values)
+    return rows
+
+
+def read_sheet_records(sheet_name):
+    rows = _fetch_sheet_rows_api(sheet_name)
+    if rows is None:
+        rows = _fetch_sheet_rows_public(sheet_name)
+
+    if not rows:
+        return []
+
+    headers = [str(value).strip() for value in rows[0]]
+    width = len(headers)
+    records = []
+    for row_number, row_values in enumerate(rows[1:], start=2):
+        row = _normalize_row(row_values, width)
+        if not any(str(value).strip() for value in row):
+            continue
+
+        record = {headers[index]: row[index] for index in range(width)}
+        record['_row_number'] = row_number
+        records.append(record)
+
+    return records
+
+
+def _update_sheet_row(sheet_name, row_number, values):
+    service = get_sheets_service()
+    if service is None:
+        raise RuntimeError('Google Sheets write access is not configured. Set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE.')
+
+    end_column = _column_letter(len(values))
+    service.spreadsheets().values().update(
+        spreadsheetId=GOOGLE_SHEET_ID,
+        range=f'{sheet_name}!A{row_number}:{end_column}{row_number}',
+        valueInputOption='USER_ENTERED',
+        body={'values': [values]},
+    ).execute()
+
+
+def _append_sheet_row(sheet_name, values):
+    service = get_sheets_service()
+    if service is None:
+        raise RuntimeError('Google Sheets write access is not configured. Set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE.')
+
+    service.spreadsheets().values().append(
+        spreadsheetId=GOOGLE_SHEET_ID,
+        range=f'{sheet_name}!A1',
+        valueInputOption='USER_ENTERED',
+        insertDataOption='INSERT_ROWS',
+        body={'values': [values]},
+    ).execute()
+
+
+def _log_audit(action, table_name, symbol='', old_value='', new_value='', notes=''):
+    if not has_sheet_write_access():
+        return
+
+    try:
+        _append_sheet_row(
+            AUDIT_LOG_SHEET,
+            [_now_iso(), action, table_name, symbol, old_value, new_value, 'app', notes],
+        )
+    except Exception as e:
+        print(f'Error writing audit log: {e}')
+
+
+def _post_apps_script(action, payload):
+    if not has_apps_script_write_access():
+        return False, 'Apps Script write endpoint is not configured.'
+
+    body = {
+        'action': action,
+        'sheet_id': GOOGLE_SHEET_ID,
+        'payload': payload,
+    }
+    if GOOGLE_APPS_SCRIPT_SHARED_SECRET:
+        body['secret'] = GOOGLE_APPS_SCRIPT_SHARED_SECRET
+
+    request_data = json.dumps(body).encode('utf-8')
+    req = urllib.request.Request(
+        GOOGLE_APPS_SCRIPT_WEB_APP_URL,
+        data=request_data,
+        headers={'Content-Type': 'application/json'},
+        method='POST',
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            text = response.read().decode('utf-8')
+        data = json.loads(text) if text else {}
+    except Exception as e:
+        return False, str(e)
+
+    if data.get('success'):
+        return True, None
+    return False, data.get('error') or 'Apps Script write failed'
+
+
+def _read_local_symbol_overrides():
+    if not os.path.exists(LOCAL_SYMBOL_OVERRIDES_PATH):
+        return {'added': [], 'removed': []}
+
+    try:
+        with open(LOCAL_SYMBOL_OVERRIDES_PATH, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+    except Exception as e:
+        print(f'Error reading local symbol overrides: {e}')
+        return {'added': [], 'removed': []}
+
+    added = sorted({str(symbol).upper().strip() for symbol in data.get('added', []) if str(symbol).strip()})
+    removed = sorted({str(symbol).upper().strip() for symbol in data.get('removed', []) if str(symbol).strip()})
+    return {'added': added, 'removed': removed}
+
+
+def _write_local_symbol_overrides(overrides):
+    normalized = {
+        'added': sorted({str(symbol).upper().strip() for symbol in overrides.get('added', []) if str(symbol).strip()}),
+        'removed': sorted({str(symbol).upper().strip() for symbol in overrides.get('removed', []) if str(symbol).strip()}),
+    }
+    with open(LOCAL_SYMBOL_OVERRIDES_PATH, 'w', encoding='utf-8') as file:
+        json.dump(normalized, file, indent=2)
+
+
+def _apply_local_symbol_overrides(symbols):
+    overrides = _read_local_symbol_overrides()
+    merged = set(symbols)
+    merged.update(overrides['added'])
+    merged.difference_update(overrides['removed'])
+    return sorted(merged)
 
 
 # Default symbol list (used for initial setup)
@@ -59,45 +335,209 @@ DEFAULT_SYMBOLS = [
 ]
 
 def load_symbols():
-    """Load symbols from Supabase"""
+    """Load active symbols from Google Sheets."""
     try:
-        response = supabase.table('symbols').select('symbol').execute()
-        if response.data:
-            return [row['symbol'] for row in response.data]
-        else:
-            # Initialize with default symbols if table is empty
+        records = read_sheet_records(SYMBOLS_SHEET)
+        symbols = []
+        for record in records:
+            symbol = str(record.get('symbol', '')).upper().strip()
+            if symbol and _to_bool(record.get('active', True)):
+                symbols.append(symbol)
+
+        if symbols:
+            return _apply_local_symbol_overrides(symbols)
+
+        if has_sheet_write_access():
             init_default_symbols()
-            return DEFAULT_SYMBOLS.copy()
+            return _apply_local_symbol_overrides(DEFAULT_SYMBOLS.copy())
+
+        print("Google Sheet symbols tab is empty; using local defaults")
+        return _apply_local_symbol_overrides(DEFAULT_SYMBOLS.copy())
     except Exception as e:
-        print(f"Error loading symbols from Supabase: {e}")
-        return DEFAULT_SYMBOLS.copy()
+        print(f"Error loading symbols from Google Sheets: {e}")
+        return _apply_local_symbol_overrides(DEFAULT_SYMBOLS.copy())
+
 
 def init_default_symbols():
-    """Initialize database with default symbols"""
+    """Initialize the symbols sheet when it is empty."""
     try:
+        today = _today_iso()
         for symbol in DEFAULT_SYMBOLS:
-            supabase.table('symbols').upsert({'symbol': symbol}).execute()
-        print("Initialized default symbols in Supabase")
+            _append_sheet_row(SYMBOLS_SHEET, [symbol, 'TRUE', today, ''])
+        print("Initialized default symbols in Google Sheets")
     except Exception as e:
         print(f"Error initializing symbols: {e}")
 
+
 def add_symbol_to_db(symbol):
-    """Add a symbol to Supabase"""
+    """Add or reactivate a symbol in Google Sheets."""
+    if has_apps_script_write_access() and not has_sheet_write_access():
+        return _post_apps_script('upsert_symbol', {'symbol': symbol})
+
+    if not has_sheet_write_access():
+        try:
+            overrides = _read_local_symbol_overrides()
+            added = set(overrides['added'])
+            removed = set(overrides['removed'])
+            added.add(symbol)
+            removed.discard(symbol)
+            _write_local_symbol_overrides({'added': sorted(added), 'removed': sorted(removed)})
+            return True, None
+        except Exception as e:
+            print(f"Error adding local symbol override: {e}")
+            return False, str(e)
+
     try:
-        supabase.table('symbols').insert({'symbol': symbol}).execute()
-        return True
+        records = read_sheet_records(SYMBOLS_SHEET)
+        today = _today_iso()
+
+        for record in records:
+            if str(record.get('symbol', '')).upper().strip() != symbol:
+                continue
+
+            updated = [
+                symbol,
+                'TRUE',
+                record.get('added_at') or today,
+                record.get('notes', ''),
+            ]
+            _update_sheet_row(SYMBOLS_SHEET, record['_row_number'], updated)
+            _log_audit('upsert', SYMBOLS_SHEET, symbol, json.dumps(record, default=str), json.dumps(updated))
+            return True, None
+
+        new_row = [symbol, 'TRUE', today, '']
+        _append_sheet_row(SYMBOLS_SHEET, new_row)
+        _log_audit('insert', SYMBOLS_SHEET, symbol, '', json.dumps(new_row))
+        return True, None
     except Exception as e:
         print(f"Error adding symbol: {e}")
-        return False
+        return False, str(e)
+
 
 def remove_symbol_from_db(symbol):
-    """Remove a symbol from Supabase"""
+    """Soft-delete a symbol in Google Sheets by marking it inactive."""
+    if has_apps_script_write_access() and not has_sheet_write_access():
+        return _post_apps_script('deactivate_symbol', {'symbol': symbol})
+
+    if not has_sheet_write_access():
+        try:
+            overrides = _read_local_symbol_overrides()
+            added = set(overrides['added'])
+            removed = set(overrides['removed'])
+            added.discard(symbol)
+            removed.add(symbol)
+            _write_local_symbol_overrides({'added': sorted(added), 'removed': sorted(removed)})
+            return True, None
+        except Exception as e:
+            print(f"Error removing local symbol override: {e}")
+            return False, str(e)
+
     try:
-        supabase.table('symbols').delete().eq('symbol', symbol).execute()
-        return True
+        records = read_sheet_records(SYMBOLS_SHEET)
+        for record in records:
+            if str(record.get('symbol', '')).upper().strip() != symbol:
+                continue
+
+            updated = [
+                symbol,
+                'FALSE',
+                record.get('added_at', ''),
+                record.get('notes', ''),
+            ]
+            _update_sheet_row(SYMBOLS_SHEET, record['_row_number'], updated)
+            _log_audit('deactivate', SYMBOLS_SHEET, symbol, json.dumps(record, default=str), json.dumps(updated))
+            return True, None
+
+        return False, f'{symbol} not found'
     except Exception as e:
         print(f"Error removing symbol: {e}")
-        return False
+        return False, str(e)
+
+
+def load_sim_positions_from_sheet():
+    """Load active SIM holdings from Google Sheets."""
+    try:
+        records = read_sheet_records(SIM_POSITIONS_SHEET)
+        positions = []
+        for record in records:
+            symbol = str(record.get('symbol', '')).upper().strip()
+            if not symbol or not _to_bool(record.get('active', True)):
+                continue
+
+            positions.append({
+                'symbol': symbol,
+                'shares': float(record.get('shares') or 0),
+                'cost': float(record.get('cost') or 0),
+                'buy_date': str(record.get('buy_date') or ''),
+                'active': True,
+                'updated_at': str(record.get('updated_at') or ''),
+            })
+
+        positions.sort(key=lambda row: (row['buy_date'], row['symbol']))
+        return positions
+    except Exception as e:
+        print(f"Error loading SIM positions: {e}")
+        return []
+
+
+def upsert_sim_position_in_sheet(symbol, shares, cost, buy_date):
+    """Add or update a SIM holding row in Google Sheets."""
+    if has_apps_script_write_access() and not has_sheet_write_access():
+        return _post_apps_script('upsert_sim_position', {
+            'symbol': symbol,
+            'shares': shares,
+            'cost': cost,
+            'buy_date': buy_date,
+        })
+
+    try:
+        records = read_sheet_records(SIM_POSITIONS_SHEET)
+        updated_at = _today_iso()
+        new_row = [symbol, shares, cost, buy_date, 'TRUE', updated_at]
+
+        for record in records:
+            if str(record.get('symbol', '')).upper().strip() != symbol:
+                continue
+
+            _update_sheet_row(SIM_POSITIONS_SHEET, record['_row_number'], new_row)
+            _log_audit('upsert', SIM_POSITIONS_SHEET, symbol, json.dumps(record, default=str), json.dumps(new_row))
+            return True, None
+
+        _append_sheet_row(SIM_POSITIONS_SHEET, new_row)
+        _log_audit('insert', SIM_POSITIONS_SHEET, symbol, '', json.dumps(new_row))
+        return True, None
+    except Exception as e:
+        print(f"Error upserting SIM position: {e}")
+        return False, str(e)
+
+
+def delete_sim_position_from_sheet(symbol):
+    """Soft-delete a SIM holding by marking it inactive."""
+    if has_apps_script_write_access() and not has_sheet_write_access():
+        return _post_apps_script('deactivate_sim_position', {'symbol': symbol})
+
+    try:
+        records = read_sheet_records(SIM_POSITIONS_SHEET)
+        for record in records:
+            if str(record.get('symbol', '')).upper().strip() != symbol:
+                continue
+
+            updated = [
+                symbol,
+                record.get('shares', ''),
+                record.get('cost', ''),
+                record.get('buy_date', ''),
+                'FALSE',
+                _today_iso(),
+            ]
+            _update_sheet_row(SIM_POSITIONS_SHEET, record['_row_number'], updated)
+            _log_audit('deactivate', SIM_POSITIONS_SHEET, symbol, json.dumps(record, default=str), json.dumps(updated))
+            return True, None
+
+        return False, f'{symbol} not found'
+    except Exception as e:
+        print(f"Error deleting SIM position: {e}")
+        return False, str(e)
 
 def calculate_rsi(prices, period=14):
     """Calculate RSI (Relative Strength Index)"""
@@ -137,7 +577,7 @@ def batch_calculate_all(symbols):
     """Batch download and calculate all symbols at once - MUCH faster"""
     try:
         # Batch download all symbols at once
-        data = yf.download(symbols, period="40d", group_by='ticker', progress=False, threads=True)
+        data = yf.download(symbols, period="60d", group_by='ticker', progress=False, threads=True)
         results = []
         
         for symbol in symbols:
@@ -325,6 +765,18 @@ def get_symbols():
     return jsonify({'symbols': sorted(symbols), 'count': len(symbols)})
 
 
+@app.route('/api/storage-status', methods=['GET'])
+def get_storage_status():
+    """Expose the current write mode for symbols and SIM."""
+    return jsonify({
+        'storage': 'google_sheets',
+        'write_enabled': True,
+        'shared_write_enabled': has_shared_sheet_write_access(),
+        'write_mode': get_write_mode(),
+        'message': '' if has_shared_sheet_write_access() else write_access_error_message(),
+    })
+
+
 @app.route('/api/symbols/add', methods=['POST'])
 def add_symbol():
     """Add a new symbol"""
@@ -347,10 +799,10 @@ def add_symbol():
     if symbol in symbols:
         return jsonify({'error': f'{symbol} already exists'}), 400
     
-    if add_symbol_to_db(symbol):
+    success, error = add_symbol_to_db(symbol)
+    if success:
         return jsonify({'success': True, 'symbol': symbol, 'count': len(symbols) + 1})
-    else:
-        return jsonify({'error': 'Failed to add symbol'}), 500
+    return jsonify({'error': error or 'Failed to add symbol'}), 500
 
 
 @app.route('/api/symbols/remove', methods=['POST'])
@@ -366,10 +818,10 @@ def remove_symbol():
     if symbol not in symbols:
         return jsonify({'error': f'{symbol} not found'}), 404
     
-    if remove_symbol_from_db(symbol):
+    success, error = remove_symbol_from_db(symbol)
+    if success:
         return jsonify({'success': True, 'symbol': symbol, 'count': len(symbols) - 1})
-    else:
-        return jsonify({'error': 'Failed to remove symbol'}), 500
+    return jsonify({'error': error or 'Failed to remove symbol'}), 500
 
 
 @app.route('/api/chart/<symbol>')
@@ -515,10 +967,9 @@ def get_sim_price(symbol):
 # SIM Portfolio API endpoints
 @app.route('/api/sim/positions', methods=['GET'])
 def get_sim_positions():
-    """Get all SIM positions from Supabase"""
+    """Get all active SIM positions from Google Sheets."""
     try:
-        response = supabase.table('sim_positions').select('*').execute()
-        return jsonify(response.data if response.data else [])
+        return jsonify(load_sim_positions_from_sheet())
     except Exception as e:
         print(f"Error getting SIM positions: {e}")
         return jsonify([])
@@ -531,18 +982,24 @@ def add_sim_position():
     symbol = data.get('symbol', '').upper().strip()
     shares = data.get('shares')
     cost = data.get('cost')
-    buy_date = data.get('buy_date', '')
-    
+    buy_date = str(data.get('buy_date', '')).strip()
+
     if not symbol or shares is None or cost is None:
         return jsonify({'error': 'Missing required fields'}), 400
+
+    try:
+        shares = float(shares)
+        cost = float(cost)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Shares and cost must be numbers'}), 400
+
+    if shares <= 0 or cost <= 0:
+        return jsonify({'error': 'Shares and cost must be greater than zero'}), 400
     
     try:
-        supabase.table('sim_positions').upsert({
-            'symbol': symbol,
-            'shares': float(shares),
-            'cost': float(cost),
-            'buy_date': buy_date
-        }).execute()
+        success, error = upsert_sim_position_in_sheet(symbol, shares, cost, buy_date)
+        if not success:
+            return jsonify({'error': error or 'Failed to save SIM position'}), 500
         return jsonify({'success': True})
     except Exception as e:
         print(f"Error adding SIM position: {e}")
@@ -553,7 +1010,9 @@ def add_sim_position():
 def delete_sim_position(symbol):
     """Delete a SIM position"""
     try:
-        supabase.table('sim_positions').delete().eq('symbol', symbol.upper()).execute()
+        success, error = delete_sim_position_from_sheet(symbol.upper())
+        if not success:
+            return jsonify({'error': error or 'Failed to delete SIM position'}), 500
         return jsonify({'success': True})
     except Exception as e:
         print(f"Error deleting SIM position: {e}")

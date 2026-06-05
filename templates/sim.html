@@ -1,532 +1,682 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="canonical" href="{{ base_url }}{{ request.path }}">
-    <title>SIM - Portfolio</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SIM Portfolio</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        :root {
+            --bg: #171a35;
+            --panel: #1d2346;
+            --panel-2: #1d3a56;
+            --panel-3: #13182d;
+            --line: rgba(24, 215, 255, 0.08);
+            --cyan: #22d4ff;
+            --green: #20ef7a;
+            --red: #ff5b7c;
+            --text: #f7fbff;
+            --muted: rgba(225, 233, 255, 0.56);
+            --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            margin: 0;
             min-height: 100vh;
-            color: #e0e0e0;
+            font-family: "SF Pro Display", "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top right, rgba(29, 58, 86, 0.4), transparent 34%),
+                linear-gradient(180deg, #171932 0%, #1c2147 100%);
         }
-        
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        
-        header {
+
+        .page {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 28px 18px 42px;
+        }
+
+        .topbar {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 22px;
         }
-        
-        h1 {
-            font-size: 1.8rem;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+
+        .topbar-title {
+            margin: 0;
+            color: #22f0dc;
+            font-size: clamp(2.2rem, 8vw, 3.4rem);
+            font-weight: 600;
+            letter-spacing: -0.05em;
         }
-        
-        .back-btn {
-            background: linear-gradient(135deg, #00d9ff, #0099cc);
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 0.9rem;
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
-        
-        .back-btn:hover { opacity: 0.9; }
-        
-        .refresh-btn {
-            background: linear-gradient(135deg, #00d9ff, #0099cc);
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
+
+        .topbar-btn {
+            border: 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #30dbff 0%, #1db5f2 100%);
+            color: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 10px 24px rgba(24, 176, 236, 0.28);
             cursor: pointer;
             font-size: 1rem;
-            margin-right: 8px;
+            min-height: 56px;
+            padding: 0 22px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        
-        .refresh-btn:hover { opacity: 0.9; }
-        
-        .summary {
-            background: rgba(0, 217, 255, 0.1);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
+
+        .topbar-btn--icon {
+            width: 56px;
+            min-width: 56px;
+            padding: 0;
+            font-size: 1.45rem;
         }
-        
-        .total-value {
-            font-size: 2.5rem;
+
+        .hero {
+            background: linear-gradient(135deg, #1f3c5b 0%, #1f3a56 100%);
+            border-radius: 32px;
+            padding: 34px 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-total {
+            margin: 0;
+            font-size: clamp(3.2rem, 11vw, 5.25rem);
+            line-height: 0.95;
             font-weight: 700;
-            color: #fff;
+            letter-spacing: -0.06em;
         }
-        
-        .total-gain {
-            font-size: 1.2rem;
-            margin-top: 5px;
+
+        .hero-gain {
+            margin-top: 18px;
+            font-size: clamp(1.45rem, 5vw, 2.2rem);
+            color: var(--green);
+            letter-spacing: -0.03em;
         }
-        
-        .positive { color: #00ff88; }
-        .negative { color: #ff4757; }
-        
-        .add-form {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: flex-end;
+
+        .form-panel {
+            margin-top: 26px;
+            background: rgba(28, 34, 71, 0.9);
+            border-radius: 28px;
+            padding: 26px 22px 24px;
+            box-shadow: var(--shadow);
         }
-        
-        .form-group {
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px 24px;
+        }
+
+        .field {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 10px;
         }
-        
-        .form-group label {
-            font-size: 0.8rem;
-            color: #888;
+
+        .field label {
+            font-size: 0.95rem;
+            color: var(--muted);
+            letter-spacing: 0.02em;
         }
-        
-        .form-group input {
-            padding: 10px 12px;
-            border: 2px solid rgba(0, 217, 255, 0.3);
-            border-radius: 6px;
-            background: rgba(0, 0, 0, 0.3);
-            color: #fff;
-            font-size: 1rem;
-            width: 120px;
-        }
-        
-        .form-group input:focus {
+
+        .field input {
+            width: 100%;
+            border: 1px solid rgba(0, 204, 255, 0.14);
+            border-radius: 16px;
+            background: var(--panel-3);
+            color: var(--text);
+            font-size: 1.1rem;
+            padding: 18px 16px;
             outline: none;
-            border-color: #00d9ff;
         }
-        
-        .add-btn {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #00ff88, #00cc6a);
-            border: none;
-            border-radius: 6px;
-            color: #000;
-            font-weight: 600;
+
+        .field input:focus {
+            border-color: rgba(34, 212, 255, 0.4);
+            box-shadow: 0 0 0 3px rgba(34, 212, 255, 0.08);
+        }
+
+        .form-actions {
+            display: flex;
+            align-items: end;
+            gap: 16px;
+        }
+
+        .submit-btn {
+            min-width: 152px;
+            height: 62px;
+            border: 0;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #15f484 0%, #0fe7aa 100%);
+            color: #ffffff;
+            font-size: 1.35rem;
             cursor: pointer;
+            box-shadow: 0 12px 24px rgba(21, 244, 132, 0.2);
         }
-        
-        .add-btn:hover { opacity: 0.9; }
-        
-        .table-container {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
+
+        .status {
+            margin-top: 14px;
+            min-height: 20px;
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+
+        .status.error {
+            color: #ff96ad;
+        }
+
+        .table-card {
+            margin-top: 34px;
+            background: rgba(28, 34, 71, 0.92);
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .table-wrap {
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
         }
-        
-        table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        
+
+        table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(90deg, #1d3b58 0%, #1f3f5d 100%);
+        }
+
         th {
-            background: rgba(0, 217, 255, 0.1);
-            padding: 12px 10px;
+            padding: 22px 20px;
             text-align: left;
-            font-weight: 600;
-            color: #00d9ff;
-            font-size: 0.85rem;
+            color: var(--cyan);
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
             white-space: nowrap;
-        }
-        
-        th.sortable {
             cursor: pointer;
             user-select: none;
         }
-        
-        th.sortable:hover { background: rgba(0, 217, 255, 0.2); }
-        th.sorted { color: #00ff88; }
-        th .sort-icon { opacity: 0.4; margin-left: 4px; }
-        th.sorted .sort-icon { opacity: 1; }
-        th.sorted.asc .sort-icon { transform: rotate(180deg); display: inline-block; }
-        
+
+        th.sortable::after {
+            content: "▼";
+            margin-left: 7px;
+            font-size: 0.75em;
+            opacity: 0.36;
+        }
+
+        th.active-sort::after {
+            opacity: 0.95;
+        }
+
+        th.active-sort.desc::after {
+            content: "▲";
+        }
+
         td {
-            padding: 12px 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.9rem;
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--line);
+            font-size: 1rem;
+            color: rgba(245, 248, 255, 0.88);
             white-space: nowrap;
         }
-        
-        tr:hover td { background: rgba(0, 217, 255, 0.05); }
-        
-        .sym-cell {
+
+        tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .sym {
+            color: var(--cyan);
             font-weight: 700;
-            color: #00d9ff;
-            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 1.12rem;
+            letter-spacing: 0.03em;
         }
-        
+
+        .mono {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .up {
+            color: var(--green);
+        }
+
+        .down {
+            color: var(--red);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .row-actions {
+            text-align: right;
+        }
+
         .delete-btn {
-            background: none;
-            border: none;
-            color: #ff4757;
+            border: 1px solid rgba(255, 91, 124, 0.22);
+            background: rgba(255, 91, 124, 0.08);
+            color: #ff8aa2;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.92rem;
             cursor: pointer;
-            font-size: 1.2rem;
         }
-        
-        .delete-btn:hover { color: #ff6b7a; }
-        
-        .loading { text-align: center; padding: 40px; color: #888; }
-        
-        .empty-msg {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        
-        /* Mobile horizontal scroll hint */
-        @media (max-width: 768px) {
-            .table-container {
-                position: relative;
+
+        @media (max-width: 720px) {
+            .page {
+                padding: 18px 12px 28px;
             }
-            .table-container::after {
-                content: '';
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                width: 30px;
-                background: linear-gradient(to right, transparent, rgba(26, 26, 46, 0.8));
-                pointer-events: none;
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .topbar-actions {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 12px;
+            }
+
+            .hero {
+                border-radius: 26px;
+                padding: 28px 20px;
+            }
+
+            .form-panel {
+                border-radius: 24px;
+                padding: 22px 16px 18px;
+            }
+
+            .form-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+            }
+
+            .field--symbol {
+                grid-column: span 2;
+            }
+
+            .field--cost {
+                grid-column: span 2;
+            }
+
+            .form-actions {
+                grid-column: span 2;
+            }
+
+            .submit-btn {
+                flex: 1;
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>SIM</h1>
-            <div style="display: flex; align-items: center;">
-                <button class="refresh-btn" onclick="refreshTable()" title="重新整理">&#8635;</button>
-                <a href="/" class="back-btn">返回主頁</a>
-            </div>
-        </header>
-        
-        <div class="summary">
-            <div class="total-value" id="total-value">$0.00</div>
-            <div class="total-gain" id="total-gain">
-                <span id="gain-amount">$0.00</span>
-                <span id="gain-percent">(0.00%)</span>
+    <div class="page">
+        <div class="topbar">
+            <h1 class="topbar-title">SIM</h1>
+            <div class="topbar-actions">
+                <button class="topbar-btn topbar-btn--icon" id="refresh-btn" type="button" aria-label="Refresh">↻</button>
+                <button class="topbar-btn" id="excel-btn" type="button">Excel</button>
+                <a class="topbar-btn" href="/">返回主頁</a>
             </div>
         </div>
-        
-        <div class="add-form">
-            <div class="form-group">
-                <label>股票代碼</label>
-                <input type="text" id="input-sym" placeholder="AAPL" style="width: 100px;">
+
+        <section class="hero">
+            <h1 class="hero-total mono" id="portfolio-total">$0</h1>
+            <div class="hero-gain mono" id="portfolio-gain">$0 (0%)</div>
+        </section>
+
+        <section class="form-panel">
+            <form id="sim-form">
+                <div class="form-grid">
+                    <div class="field field--symbol">
+                        <label for="symbol">股票代碼</label>
+                        <input id="symbol" name="symbol" type="text" autocomplete="off" placeholder="AAPL" required>
+                    </div>
+                    <div class="field">
+                        <label for="shares">股數</label>
+                        <input id="shares" name="shares" type="number" step="0.01" min="0" placeholder="100" required>
+                    </div>
+                    <div class="field field--cost">
+                        <label for="cost">成本價</label>
+                        <input id="cost" name="cost" type="number" step="0.01" min="0" placeholder="150.00" required>
+                    </div>
+                    <div class="field">
+                        <label for="buy_date">日期</label>
+                        <input id="buy_date" name="buy_date" type="text" placeholder="Jun05" required>
+                    </div>
+                    <div class="form-actions">
+                        <button class="submit-btn" type="submit">新增</button>
+                    </div>
+                </div>
+            </form>
+            <div class="status" id="status"></div>
+        </section>
+
+        <section class="table-card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable active-sort" data-sort="symbol">Sym</th>
+                            <th class="sortable" data-sort="shares">Shares</th>
+                            <th class="sortable" data-sort="cost">Cost</th>
+                            <th class="sortable" data-sort="price">Price</th>
+                            <th class="sortable" data-sort="chg_percent">Chg%</th>
+                            <th class="sortable" data-sort="value">Value</th>
+                            <th class="sortable" data-sort="gain">Gain</th>
+                            <th class="sortable" data-sort="gain_percent">Gain%</th>
+                            <th class="sortable" data-sort="buy_date">Buy Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positions-body"></tbody>
+                </table>
             </div>
-            <div class="form-group">
-                <label>股數</label>
-                <input type="number" id="input-shares" placeholder="100" style="width: 80px;">
-            </div>
-            <div class="form-group">
-                <label>成本價</label>
-                <input type="number" id="input-cost" placeholder="150.00" step="0.01" style="width: 100px;">
-            </div>
-            <div class="form-group">
-                <label>日期</label>
-                <input type="text" id="input-date" placeholder="Feb22" maxlength="5" style="width: 70px;">
-            </div>
-            <button class="add-btn" onclick="addPosition()">新增</button>
-        </div>
-        
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="sortable" data-col="sym" onclick="sortTable('sym')">Sym<span class="sort-icon">▼</span></th>
-                        <th>Shares</th>
-                        <th>Cost</th>
-                        <th>Price</th>
-                        <th class="sortable"data-col="change" onclick="sortTable('change')">Chg%<span class="sort-icon">▼</span></th>
-                        <th class="sortable" data-col="value" onclick="sortTable('value')">Value<span class="sort-icon">▼</span></th>
-                        <th class="sortable" data-col="gain" onclick="sortTable('gain')">Gain<span class="sort-icon">▼</span></th>
-                        <th class="sortable" data-col="gainPct" onclick="sortTable('gainPct')">Gain%<span class="sort-icon">▼</span></th>
-                        <th class="sortable" data-col="date" onclick="sortTable('date')">Date<span class="sort-icon">▼</span></th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    <tr><td colspan="10" class="empty-msg">尚無持倉，請新增股票</td></tr>
-                </tbody>
-            </table>
-        </div>
+        </section>
     </div>
 
     <script>
-        let positions = [];
-        let displayData = [];
-        let currentSort = { col: 'date', dir: 'desc' };
-        
-        function getTodayYYMMDD() {
-            const d = new Date();
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const mmm = months[d.getMonth()];
-            const dd = String(d.getDate()).padStart(2, '0');
-            return mmm + dd;
+        const positionsBody = document.getElementById('positions-body');
+        const statusEl = document.getElementById('status');
+        const totalEl = document.getElementById('portfolio-total');
+        const gainEl = document.getElementById('portfolio-gain');
+        const formEl = document.getElementById('sim-form');
+        const sortHeaders = Array.from(document.querySelectorAll('th.sortable'));
+        const refreshBtn = document.getElementById('refresh-btn');
+        const excelBtn = document.getElementById('excel-btn');
+
+        let rows = [];
+        let sortState = { key: 'symbol', direction: 'asc' };
+
+        function formatMoney(value, digits = 0) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: digits,
+                maximumFractionDigits: digits
+            }).format(value);
         }
-        
-        function formatDateDisplay(dateStr) {
-            if (!dateStr) return '-';
-            // If already MMMDD format
-            if (dateStr.match(/^[A-Za-z]{3}\d{2}$/)) return dateStr;
-            // Convert YYMMDD to MMMDD
-            if (dateStr.length === 6 && /^\d{6}$/.test(dateStr)) {
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const mm = parseInt(dateStr.slice(2, 4), 10);
-                const dd = dateStr.slice(4, 6);
-                return months[mm - 1] + dd;
-            }
-            return dateStr;
+
+        function formatMoneyFlexible(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
         }
-        
-        // Set default date on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('input-date').value = getTodayYYMMDD();
-        });
-        
-        function sortTable(col) {
-            if (currentSort.col === col) {
-                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.col = col;
-                currentSort.dir = 'desc';
+
+        function formatPercent(value, digits = 0) {
+            const sign = value > 0 ? '+' : '';
+            return `${sign}${value.toFixed(digits)}%`;
+        }
+
+        function numberOrNull(value) {
+            return Number.isFinite(value) ? value : null;
+        }
+
+        function parseDateToken(value) {
+            if (!value) return Number.NEGATIVE_INFINITY;
+            const match = String(value).trim().match(/^([A-Za-z]{3})(\d{2})$/);
+            if (!match) return String(value).toUpperCase();
+            const months = {
+                JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5,
+                JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11
+            };
+            const month = months[match[1].toUpperCase()];
+            if (month == null) return String(value).toUpperCase();
+            return new Date(2026, month, Number(match[2])).getTime();
+        }
+
+        function compareValues(a, b, key) {
+            if (key === 'symbol' || key === 'buy_date') {
+                const left = key === 'buy_date' ? parseDateToken(a[key]) : String(a[key] || '').toUpperCase();
+                const right = key === 'buy_date' ? parseDateToken(b[key]) : String(b[key] || '').toUpperCase();
+                if (left < right) return -1;
+                if (left > right) return 1;
+                return 0;
             }
-            
-            document.querySelectorAll('th.sortable').forEach(th => {
-                th.classList.remove('sorted', 'asc', 'desc');
-            });
-            const th = document.querySelector(`th[data-col="${col}"]`);
-            th.classList.add('sorted', currentSort.dir);
-            
-            displayData.sort((a, b) => {
-                let va = a[col], vb = b[col];
-                if (col === 'sym' || col === 'date') {
-                    return currentSort.dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+
+            const left = a[key];
+            const right = b[key];
+            const leftMissing = left == null || Number.isNaN(left);
+            const rightMissing = right == null || Number.isNaN(right);
+            if (leftMissing && rightMissing) return 0;
+            if (leftMissing) return 1;
+            if (rightMissing) return -1;
+            return left - right;
+        }
+
+        function applySort(nextKey) {
+            if (nextKey) {
+                if (sortState.key === nextKey) {
+                    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortState = { key: nextKey, direction: 'asc' };
                 }
-                va = parseFloat(va) || 0;
-                vb = parseFloat(vb) || 0;
-                return currentSort.dir === 'asc' ? va - vb : vb - va;
-            });
-            
-            renderRows();
-        }
-        
-        async function loadPositions() {
-            try {
-                const response = await fetch('/api/sim/positions');
-                if (!response.ok) throw new Error('Failed to load SIM positions');
-                const data = await response.json();
-                positions = data.map(p => ({ sym: p.symbol, shares: p.shares, cost: p.cost, date: p.buy_date || '' }));
-                return true;
-            } catch (e) {
-                console.error('Error loading positions:', e);
-                return false;
             }
+
+            rows.sort((a, b) => {
+                const result = compareValues(a, b, sortState.key);
+                return sortState.direction === 'asc' ? result : -result;
+            });
+
+            sortHeaders.forEach((header) => {
+                const active = header.dataset.sort === sortState.key;
+                header.classList.toggle('active-sort', active);
+                header.classList.toggle('desc', active && sortState.direction === 'desc');
+            });
         }
-        
+
+        function updateSummary() {
+            let totalValue = 0;
+            let totalCost = 0;
+            let totalGain = 0;
+
+            rows.forEach((row) => {
+                totalValue += row.value_for_total;
+                totalCost += row.cost_basis;
+                totalGain += row.gain_for_total;
+            });
+
+            const gainPct = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+            totalEl.textContent = formatMoney(totalValue, 0);
+            gainEl.textContent = `${totalGain >= 0 ? '+' : '-'}${formatMoney(Math.abs(totalGain), 0)} (${totalGain >= 0 ? '+' : '-'}${Math.abs(gainPct).toFixed(0)}%)`;
+            gainEl.className = `hero-gain mono ${totalGain >= 0 ? 'up' : 'down'}`;
+        }
+
+        function renderTable() {
+            positionsBody.innerHTML = rows.map((row) => {
+                const chgClass = row.chg_percent == null ? 'muted' : row.chg_percent >= 0 ? 'up' : 'down';
+                const gainClass = row.gain == null ? 'muted' : row.gain >= 0 ? 'up' : 'down';
+                const gainPctClass = row.gain_percent == null ? 'muted' : row.gain_percent >= 0 ? 'up' : 'down';
+                const priceText = row.price == null ? '-' : formatMoneyFlexible(row.price);
+                const chgText = row.chg_percent == null ? '-' : formatPercent(row.chg_percent, 0);
+                const valueText = row.value == null ? '-' : formatMoney(row.value, 0);
+                const gainText = row.gain == null ? '-' : `${row.gain >= 0 ? '+' : '-'}${formatMoney(Math.abs(row.gain), 0)}`;
+                const gainPctText = row.gain_percent == null ? '-' : formatPercent(row.gain_percent, 0);
+
+                return `
+                    <tr>
+                        <td class="sym">${row.symbol}</td>
+                        <td class="mono">${row.shares % 1 === 0 ? row.shares.toFixed(0) : row.shares.toFixed(2)}</td>
+                        <td class="mono">${formatMoneyFlexible(row.cost)}</td>
+                        <td class="mono">${priceText}</td>
+                        <td class="mono ${chgClass}">${chgText}</td>
+                        <td class="mono">${valueText}</td>
+                        <td class="mono ${gainClass}">${gainText}</td>
+                        <td class="mono ${gainPctClass}">${gainPctText}</td>
+                        <td class="mono">${row.buy_date || '-'}</td>
+                        <td class="row-actions"><button class="delete-btn" data-symbol="${row.symbol}">Delete</button></td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.delete-btn').forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const symbol = button.dataset.symbol;
+                    if (!confirm(`Delete ${symbol}?`)) return;
+                    try {
+                        const response = await fetch(`/api/sim/positions/${encodeURIComponent(symbol)}`, {
+                            method: 'DELETE'
+                        });
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Delete failed');
+                        }
+                        setStatus(`${symbol} deleted`);
+                        await loadPositions();
+                    } catch (error) {
+                        setStatus(error.message, true);
+                    }
+                });
+            });
+        }
+
+        function setStatus(message, isError = false) {
+            statusEl.textContent = message || '';
+            statusEl.className = isError ? 'status error' : 'status';
+        }
+
+        function exportExcel() {
+            const headers = ['Symbol', 'Shares', 'Cost', 'Price', 'Chg%', 'Value', 'Gain', 'Gain%', 'Buy Date'];
+            const csvRows = [headers.join(',')];
+
+            rows.forEach((row) => {
+                csvRows.push([
+                    row.symbol,
+                    row.shares,
+                    row.cost,
+                    row.price ?? '',
+                    row.chg_percent ?? '',
+                    row.value ?? '',
+                    row.gain ?? '',
+                    row.gain_percent ?? '',
+                    row.buy_date || ''
+                ].join(','));
+            });
+
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const stamp = new Date().toISOString().slice(0, 10);
+            link.href = url;
+            link.download = `sim-portfolio-${stamp}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            setStatus('Excel download started');
+        }
+
         async function fetchPrice(symbol) {
             try {
-                const response = await fetch(`/api/sim/price/${symbol}`);
-                const data = await response.json();
-                return data;
-            } catch (e) {
-                return null;
+                const response = await fetch(`/api/sim/price/${encodeURIComponent(symbol)}`);
+                if (!response.ok) {
+                    return { price: null, change_percent: null };
+                }
+                return await response.json();
+            } catch (error) {
+                return { price: null, change_percent: null };
             }
         }
-        
-        async function addPosition() {
-            const sym = document.getElementById('input-sym').value.toUpperCase().trim();
-            const shares = parseFloat(document.getElementById('input-shares').value);
-            const cost = parseFloat(document.getElementById('input-cost').value);
-            const date = document.getElementById('input-date').value.trim();
-            
-            if (!sym || !shares || !cost) {
-                alert('請填寫所有欄位');
-                return;
-            }
-            
-            const exists = positions.find(p => p.sym === sym);
-            if (exists) {
-                alert(`${sym} 已存在`);
-                return;
-            }
-            
+
+        async function loadPositions() {
+            setStatus('Loading...');
+            const response = await fetch('/api/sim/positions');
+            const baseRows = await response.json();
+
+            const enriched = await Promise.all(baseRows.map(async (position) => {
+                const live = await fetchPrice(position.symbol);
+                const price = numberOrNull(live.price);
+                const shares = Number(position.shares || 0);
+                const cost = Number(position.cost || 0);
+                const costBasis = shares * cost;
+                const value = price == null ? null : shares * price;
+                const gain = value == null ? null : value - costBasis;
+                const gainPercent = gain == null || costBasis <= 0 ? null : (gain / costBasis) * 100;
+                return {
+                    ...position,
+                    shares,
+                    cost,
+                    price,
+                    chg_percent: numberOrNull(live.change_percent),
+                    cost_basis: costBasis,
+                    value,
+                    gain,
+                    gain_percent: gainPercent,
+                    value_for_total: value == null ? costBasis : value,
+                    gain_for_total: gain == null ? 0 : gain
+                };
+            }));
+
+            rows = enriched;
+            applySort();
+            updateSummary();
+            renderTable();
+            setStatus('');
+        }
+
+        formEl.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const payload = {
+                symbol: document.getElementById('symbol').value.trim().toUpperCase(),
+                shares: Number(document.getElementById('shares').value),
+                cost: Number(document.getElementById('cost').value),
+                buy_date: document.getElementById('buy_date').value.trim()
+            };
+
             try {
                 const response = await fetch('/api/sim/positions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ symbol: sym, shares, cost, buy_date: date })
+                    body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error('Failed to save SIM position');
-                positions.push({ sym, shares, cost, date });
-            } catch (e) {
-                alert('新增失敗');
-                return;
-            }
-            
-            document.getElementById('input-sym').value = '';
-            document.getElementById('input-shares').value = '';
-            document.getElementById('input-cost').value = '';
-            document.getElementById('input-date').value = getTodayYYMMDD();
-            
-            saveToLocalStorage();
-            await renderTable();
-        }
-        
-        async function removePosition(sym) {
-            try {
-                const response = await fetch(`/api/sim/positions/${sym}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error('Failed to delete SIM position');
-                positions = positions.filter(p => p.sym !== sym);
-                saveToLocalStorage();
-                await renderTable();
-            } catch (e) {
-                alert('刪除失敗');
-            }
-        }
-        
-        function formatNumber(num, decimals = 2) {
-            return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-        }
-        
-        async function renderTable() {
-            const tbody = document.getElementById('table-body');
-            
-            if (positions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="empty-msg">尚無持倉，請新增股票</td></tr>';
-                document.getElementById('total-value').textContent = '$0.00';
-                document.getElementById('gain-amount').textContent = '$0.00';
-                document.getElementById('gain-percent').textContent = '(0.00%)';
-                return;
-            }
-            
-            tbody.innerHTML = '<tr><td colspan="10" class="loading">載入中...</td></tr>';
-            
-            let totalValue = 0;
-            let totalCost = 0;
-            displayData = [];
-            
-            for (const pos of positions) {
-                const priceData = await fetchPrice(pos.sym);
-                const item = { ...pos, price: 0, change: 0, value: 0, gain: 0, gainPct: 0, valid: false };
-                
-                if (priceData && priceData.price) {
-                    item.price = priceData.price;
-                    item.change = priceData.change_percent || 0;
-                    item.value = item.price * pos.shares;
-                    const costTotal = pos.cost * pos.shares;
-                    item.gain = item.value - costTotal;
-                    item.gainPct = ((item.price - pos.cost) / pos.cost) * 100;
-                    item.valid = true;
-                    totalValue += item.value;
-                    totalCost += costTotal;
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Save failed');
                 }
-                displayData.push(item);
+                formEl.reset();
+                setStatus(`${payload.symbol} saved`);
+                await loadPositions();
+            } catch (error) {
+                setStatus(error.message, true);
             }
-            
-            sortTable(currentSort.col);
-            
-            const totalGain = totalValue - totalCost;
-            const totalGainPercent = totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
-            const gainClass = totalGain >= 0 ? 'positive' : 'negative';
-            
-            document.getElementById('total-value').textContent = '$' + formatNumber(totalValue, 0);
-            document.getElementById('gain-amount').className = gainClass;
-            document.getElementById('gain-amount').textContent = (totalGain >= 0 ? '+' : '') + '$' + formatNumber(totalGain, 0);
-            document.getElementById('gain-percent').className = gainClass;
-            document.getElementById('gain-percent').textContent = ` (${totalGainPercent >= 0 ? '+' : ''}${Math.round(totalGainPercent)}%)`;
-        }
-        
-        function renderRows() {
-            const tbody = document.getElementById('table-body');
-            let rows = [];
-            
-            for (const item of displayData) {
-                if (item.valid) {
-                    const changeClass = item.change >= 0 ? 'positive' : 'negative';
-                    const gainClass = item.gain >= 0 ? 'positive' : 'negative';
-                    rows.push(`
-                        <tr>
-                            <td class="sym-cell">${item.sym}</td>
-                            <td>${item.shares}</td>
-                            <td>$${formatNumber(item.cost)}</td>
-                            <td>$${formatNumber(item.price)}</td>
-                            <td class="${changeClass}">${item.change >= 0 ? '+' : ''}${Math.round(item.change)}%</td>
-                            <td>$${formatNumber(item.value, 0)}</td>
-                            <td class="${gainClass}">${item.gain >= 0 ? '+' : ''}$${Math.round(item.gain)}</td>
-                            <td class="${gainClass}">${item.gainPct >= 0 ? '+' : ''}${Math.round(item.gainPct)}%</td>
-                            <td>${formatDateDisplay(item.date)}</td>
-                            <td><button class="delete-btn" onclick="removePosition('${item.sym}')">×</button></td>
-                        </tr>
-                    `);
-                } else {
-                    rows.push(`
-                        <tr>
-                            <td class="sym-cell">${item.sym}</td>
-                            <td>${item.shares}</td>
-                            <td>$${formatNumber(item.cost)}</td>
-                            <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
-                            <td>${formatDateDisplay(item.date)}</td>
-                            <td><button class="delete-btn" onclick="removePosition('${item.sym}')">×</button></td>
-                        </tr>
-                    `);
-                }
-            }
-            tbody.innerHTML = rows.join('');
-        }
-        
-        // Save positions to localStorage
-        function saveToLocalStorage() {
-            localStorage.setItem('sim_positions', JSON.stringify(positions));
-            localStorage.removeItem('sim_rh_positions');
-            localStorage.removeItem('sim_df_positions');
-        }
-        
-        // Load positions from localStorage only if the universal Supabase load fails.
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('sim_positions') || localStorage.getItem('sim_rh_positions');
-            if (saved) {
-                try {
-                    positions = JSON.parse(saved);
-                } catch (e) {
-                    positions = [];
-                }
-            }
-        }
-        
-        // Refresh function - call this to reload data
-        async function refreshTable() {
-            const loaded = await loadPositions();
-            if (loaded) saveToLocalStorage();
-            await renderTable();
-        }
-        
-        // Initial load: Supabase is the source of truth; local cache is only fallback.
-        (async () => {
-            const loaded = await loadPositions();
-            if (!loaded) loadFromLocalStorage();
-            saveToLocalStorage();
-            await renderTable();
-        })();
+        });
+
+        sortHeaders.forEach((header) => {
+            header.addEventListener('click', () => {
+                applySort(header.dataset.sort);
+                renderTable();
+            });
+        });
+
+        refreshBtn.addEventListener('click', async () => {
+            await loadPositions();
+            setStatus('Portfolio refreshed');
+        });
+
+        excelBtn.addEventListener('click', exportExcel);
+
+        loadPositions();
     </script>
 </body>
 </html>
