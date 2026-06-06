@@ -801,7 +801,15 @@ def add_symbol():
     
     success, error = add_symbol_to_db(symbol)
     if success:
-        return jsonify({'success': True, 'symbol': symbol, 'count': len(symbols) + 1})
+        shared_write = has_shared_sheet_write_access()
+        return jsonify({
+            'success': True,
+            'symbol': symbol,
+            'count': len(symbols) + 1,
+            'shared_write': shared_write,
+            'write_mode': get_write_mode(),
+            'message': '' if shared_write else write_access_error_message(),
+        })
     return jsonify({'error': error or 'Failed to add symbol'}), 500
 
 
@@ -820,7 +828,15 @@ def remove_symbol():
     
     success, error = remove_symbol_from_db(symbol)
     if success:
-        return jsonify({'success': True, 'symbol': symbol, 'count': len(symbols) - 1})
+        shared_write = has_shared_sheet_write_access()
+        return jsonify({
+            'success': True,
+            'symbol': symbol,
+            'count': len(symbols) - 1,
+            'shared_write': shared_write,
+            'write_mode': get_write_mode(),
+            'message': '' if shared_write else write_access_error_message(),
+        })
     return jsonify({'error': error or 'Failed to remove symbol'}), 500
 
 

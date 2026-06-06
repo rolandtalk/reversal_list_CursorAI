@@ -993,6 +993,16 @@
             setTimeout(() => { msg.className = 'message'; }, 3000);
         }
 
+        async function fetchStorageStatus() {
+            try {
+                const response = await fetch('/api/storage-status');
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                return null;
+            }
+        }
+
         function getStockRow(symbol) {
             return stockData.find((row) => row.sym === symbol) || null;
         }
@@ -1013,7 +1023,11 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessage(`Added ${symbol}`, 'success');
+                    if (data.shared_write === false) {
+                        showMessage(`${symbol} added only in this app runtime. Not saved to Google Sheet.`, 'error');
+                    } else {
+                        showMessage(`Added ${symbol}`, 'success');
+                    }
                     input.value = '';
                     await fetchSymbols();
                 } else {
@@ -1035,7 +1049,11 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showMessage(`Removed ${symbol}`, 'success');
+                    if (data.shared_write === false) {
+                        showMessage(`${symbol} removed only in this app runtime. Google Sheet was not updated.`, 'error');
+                    } else {
+                        showMessage(`Removed ${symbol}`, 'success');
+                    }
                     await fetchSymbols();
                 } else {
                     showMessage(data.error, 'error');
@@ -1045,8 +1063,12 @@
             }
         }
 
-        function openModal() {
+        async function openModal() {
             document.getElementById('symbol-modal').classList.add('open');
+            const storageStatus = await fetchStorageStatus();
+            if (storageStatus && storageStatus.shared_write_enabled === false && storageStatus.message) {
+                showMessage(storageStatus.message, 'error');
+            }
             fetchSymbols();
         }
 
