@@ -10,10 +10,10 @@ This is a duplicate of the production repo; the domain above is used to avoid co
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-export FLASK_APP=app.py && .venv/bin/flask run
+export FLASK_APP=app.py && .venv/bin/flask run --port 5050
 ```
 
-Open http://127.0.0.1:5000
+Open http://127.0.0.1:5050
 
 ## Google Sheets storage
 
