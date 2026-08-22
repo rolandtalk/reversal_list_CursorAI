@@ -272,6 +272,11 @@
         .rsi-low { color: var(--green); }
         .rsi-normal { color: var(--amber); }
 
+        .table-container tbody tr td.top-3d-cell {
+            background: rgba(246, 183, 64, 0.28);
+            box-shadow: inset 0 0 0 1px rgba(246, 183, 64, 0.24);
+        }
+
         .loading {
             padding: 44px 18px;
             text-align: center;
@@ -849,6 +854,19 @@
             return `<span class="${className}">${num.toFixed(1)}</span>`;
         }
 
+        function getBest3dAverageThreshold() {
+            const bestThirty = stockData
+                .map((row) => Number.parseFloat(row.d3))
+                .filter((value) => Number.isFinite(value))
+                .sort((a, b) => b - a)
+                .slice(0, 30);
+
+            if (bestThirty.length === 0) return null;
+
+            const total = bestThirty.reduce((sum, value) => sum + value, 0);
+            return total / bestThirty.length;
+        }
+
         function renderTable() {
             const tbody = document.getElementById('table-body');
 
@@ -857,6 +875,8 @@
                 return;
             }
 
+            const best3dAverage = getBest3dAverageThreshold();
+
             tbody.innerHTML = stockData.map((row) => `
                 <tr onclick="showChart('${row.sym}')" class="${selectedSymbol === row.sym ? 'selected' : ''}" data-symbol="${row.sym}">
                     <td class="sym-cell">${row.sym}</td>
@@ -864,7 +884,7 @@
                     <td>${formatValue(row.gg)}</td>
                     <td>${formatRSI(row.rsi)}</td>
                     <td>${formatValue(row.d1)}</td>
-                    <td>${formatValue(row.d3)}</td>
+                    <td class="${best3dAverage !== null && Number.parseFloat(row.d3) > best3dAverage ? 'top-3d-cell' : ''}">${formatValue(row.d3)}</td>
                     <td>${formatValue(row.d5)}</td>
                     <td>${formatValue(row.d20)}</td>
                 </tr>
