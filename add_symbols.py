@@ -6,7 +6,7 @@ symbols = ['SNDK', 'LITE', 'WDC', 'MU', 'AG', 'SATS', 'BE', 'HL', 'TTMI', 'MKSI'
            'FN', 'ONTO', 'FTI', 'XPO', 'AA', 'CAT', 'FDX', 'NXT', 'NOK', 'AMKR',
            'TECK', 'AGI', 'TEVA', 'B', 'GFI', 'LUV', 'AEM', 'MTZ', 'TPR']
 
-BASE_URL = 'https://reversal.up.railway.app'
+BASE_URL = 'https://reversallistcursorai-production.up.railway.app'
 
 success = []
 failed = []

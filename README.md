@@ -2,7 +2,8 @@
 
 Stock Reversal Point Analysis Web App (MA3 reversal detection).
 
-**Deployment (this repo):** [https://reversal.up.railway.app](https://reversal.up.railway.app)  
+**Deployment (this repo):** [https://reversallistcursorai-production.up.railway.app](https://reversallistcursorai-production.up.railway.app)
+
 This is a duplicate of the production repo; the domain above is used to avoid confusion with the main production site.
 
 ## Run locally
@@ -77,4 +78,4 @@ To use a different public URL (e.g. for another deployment):
 export APP_BASE_URL=https://your-domain.example.com
 ```
 
-Default is `https://reversal.up.railway.app`.
+Default is `https://reversallistcursorai-production.up.railway.app`.
