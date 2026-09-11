@@ -44,11 +44,24 @@ _SHEETS_SERVICE = None
 
 # This deployment's public URL (dupe repo — avoid confusion with production)
 APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://reversallistcursorai-production.up.railway.app')
+GITHUB_REPO_URL = os.environ.get('GITHUB_REPO_URL', 'https://github.com/rolandtalk/reversal_list_CursorAI')
+GOOGLE_SHEET_NAME = os.environ.get('GOOGLE_SHEET_NAME', 'Debug_reversal_20260605')
+GOOGLE_SHEET_URL = os.environ.get(
+    'GOOGLE_SHEET_URL',
+    f'https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/edit?usp=drivesdk',
+)
 
 
 @app.context_processor
-def inject_base_url():
-    return {'base_url': APP_BASE_URL}
+def inject_app_links():
+    parsed_base_url = urllib.parse.urlparse(APP_BASE_URL)
+    return {
+        'base_url': APP_BASE_URL,
+        'production_domain': parsed_base_url.netloc or APP_BASE_URL,
+        'github_repo_url': GITHUB_REPO_URL,
+        'google_sheet_name': GOOGLE_SHEET_NAME,
+        'google_sheet_url': GOOGLE_SHEET_URL,
+    }
 
 
 def _today_iso():

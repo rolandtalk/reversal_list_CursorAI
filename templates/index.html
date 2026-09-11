@@ -122,6 +122,7 @@
         .icon-btn {
             width: 58px;
             height: 58px;
+            flex: 0 0 auto;
             border-radius: 18px;
             display: inline-flex;
             align-items: center;
@@ -134,6 +135,11 @@
         .icon-btn.download {
             color: var(--green);
             background: linear-gradient(180deg, rgba(31, 90, 71, 0.75), rgba(24, 63, 53, 0.84));
+        }
+
+        .icon-btn.remark {
+            color: var(--amber);
+            background: linear-gradient(180deg, rgba(112, 80, 31, 0.72), rgba(73, 53, 29, 0.84));
         }
 
         .manage-btn {
@@ -356,6 +362,95 @@
 
         .modal-close { font-size: 1.8rem; }
 
+        .resource-modal-content {
+            width: min(620px, 100%);
+        }
+
+        .resource-intro {
+            margin: -4px 0 18px;
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.45;
+        }
+
+        .resource-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .resource-link {
+            min-width: 0;
+            padding: 16px;
+            border: 1px solid rgba(94, 135, 197, 0.2);
+            border-radius: 16px;
+            display: grid;
+            grid-template-columns: 36px minmax(0, 1fr) 20px;
+            align-items: center;
+            gap: 13px;
+            color: var(--text);
+            text-decoration: none;
+            background: rgba(11, 17, 33, 0.34);
+            transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+        }
+
+        .resource-link:hover,
+        .resource-link:focus-visible {
+            border-color: rgba(24, 215, 255, 0.45);
+            background: rgba(24, 215, 255, 0.08);
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .resource-index {
+            width: 36px;
+            height: 36px;
+            border-radius: 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #081b21;
+            background: linear-gradient(135deg, var(--cyan), var(--green));
+            font-weight: 900;
+        }
+
+        .resource-copy {
+            min-width: 0;
+        }
+
+        .resource-label,
+        .resource-name,
+        .resource-url {
+            display: block;
+        }
+
+        .resource-label {
+            margin-bottom: 4px;
+            color: var(--cyan);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .resource-name {
+            color: #f3f6ff;
+            font-size: 1rem;
+            font-weight: 750;
+            overflow-wrap: anywhere;
+        }
+
+        .resource-url {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .resource-external {
+            color: rgba(255, 255, 255, 0.52);
+        }
+
         .message {
             display: none;
             margin-bottom: 14px;
@@ -575,6 +670,7 @@
 
             .toolbar {
                 width: 100%;
+                flex: 0 0 100%;
                 justify-content: flex-start;
                 flex-wrap: wrap;
             }
@@ -619,6 +715,7 @@
 
             .main-content.panel-open .toolbar {
                 width: 100%;
+                flex: 0 0 100%;
                 gap: 8px;
                 padding: 10px;
             }
@@ -802,6 +899,26 @@
                 font-size: 0.88rem;
             }
 
+            .resource-modal-content {
+                padding: 22px 18px;
+            }
+
+            .resource-link {
+                padding: 13px;
+                grid-template-columns: 32px minmax(0, 1fr) 18px;
+                gap: 10px;
+            }
+
+            .resource-index {
+                width: 32px;
+                height: 32px;
+                border-radius: 10px;
+            }
+
+            .resource-name {
+                font-size: 0.92rem;
+            }
+
             .panel-content {
                 padding: 16px 16px 24px;
             }
@@ -809,6 +926,47 @@
             .action-btn {
                 width: 100%;
                 justify-content: center;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .modal {
+                padding: 10px;
+            }
+
+            .manage-btn {
+                flex: 1 0 100%;
+            }
+
+            .resource-modal-content {
+                padding: 20px 14px;
+            }
+
+            .resource-link {
+                padding: 12px 10px;
+                grid-template-columns: 28px minmax(0, 1fr);
+                gap: 8px;
+            }
+
+            .resource-index {
+                width: 28px;
+                height: 28px;
+                border-radius: 9px;
+                font-size: 0.86rem;
+            }
+
+            .resource-label {
+                font-size: 0.68rem;
+            }
+
+            .resource-name {
+                font-size: 0.82rem;
+                line-height: 1.28;
+            }
+
+            .resource-url,
+            .resource-external {
+                display: none;
             }
         }
     </style>
@@ -834,6 +992,12 @@
                             <path d="M12 3v12"/>
                             <path d="M7 10l5 5 5-5"/>
                             <path d="M5 21h14"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="icon-btn remark" id="remark-button" onclick="openRemarkModal()" title="Remarks & links" aria-label="Open remarks and links" aria-haspopup="dialog" aria-controls="remark-modal" aria-expanded="false">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="3"/>
+                            <path d="M7 8h10M7 12h10M7 16h10"/>
                         </svg>
                     </button>
                     <button class="manage-btn" onclick="openModal()">
@@ -892,6 +1056,54 @@
             </div>
             <p style="color: var(--muted); margin-bottom: 8px;">Click × to remove</p>
             <div class="symbol-list" id="symbol-list"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="remark-modal" aria-hidden="true">
+        <div class="modal-content resource-modal-content" role="dialog" aria-modal="true" aria-labelledby="remark-modal-title">
+            <div class="modal-header">
+                <span class="modal-title" id="remark-modal-title">Remarks &amp; Links</span>
+                <button type="button" class="modal-close" id="remark-modal-close" onclick="closeRemarkModal()" aria-label="Close remarks and links">✕</button>
+            </div>
+            <p class="resource-intro">Quick access to this app's production source and data file.</p>
+            <div class="resource-list">
+                <a class="resource-link" href="{{ base_url }}" target="_blank" rel="noopener noreferrer">
+                    <span class="resource-index" aria-hidden="true">1</span>
+                    <span class="resource-copy">
+                        <span class="resource-label">Production public domain</span>
+                        <span class="resource-name">{{ production_domain }}</span>
+                        <span class="resource-url">{{ base_url }}</span>
+                    </span>
+                    <svg class="resource-external" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <path d="M15 3h6v6M10 14L21 3"/>
+                    </svg>
+                </a>
+                <a class="resource-link" href="{{ github_repo_url }}" target="_blank" rel="noopener noreferrer">
+                    <span class="resource-index" aria-hidden="true">2</span>
+                    <span class="resource-copy">
+                        <span class="resource-label">GitHub repository</span>
+                        <span class="resource-name">rolandtalk/reversal_list_CursorAI</span>
+                        <span class="resource-url">{{ github_repo_url }}</span>
+                    </span>
+                    <svg class="resource-external" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <path d="M15 3h6v6M10 14L21 3"/>
+                    </svg>
+                </a>
+                <a class="resource-link" href="{{ google_sheet_url }}" target="_blank" rel="noopener noreferrer">
+                    <span class="resource-index" aria-hidden="true">3</span>
+                    <span class="resource-copy">
+                        <span class="resource-label">Google Sheet</span>
+                        <span class="resource-name">{{ google_sheet_name }}</span>
+                        <span class="resource-url">{{ google_sheet_url }}</span>
+                    </span>
+                    <svg class="resource-external" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <path d="M15 3h6v6M10 14L21 3"/>
+                    </svg>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -1230,6 +1442,25 @@
             document.getElementById('symbol-modal').classList.remove('open');
         }
 
+        function openRemarkModal() {
+            const modal = document.getElementById('remark-modal');
+            const trigger = document.getElementById('remark-button');
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+            trigger.setAttribute('aria-expanded', 'true');
+            requestAnimationFrame(() => document.getElementById('remark-modal-close').focus());
+        }
+
+        function closeRemarkModal(restoreFocus = true) {
+            const modal = document.getElementById('remark-modal');
+            const trigger = document.getElementById('remark-button');
+            const wasOpen = modal.classList.contains('open');
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+            trigger.setAttribute('aria-expanded', 'false');
+            if (restoreFocus && wasOpen) trigger.focus();
+        }
+
         async function showChart(symbol) {
             selectedSymbol = symbol;
             renderTable();
@@ -1393,8 +1624,17 @@
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                if (document.getElementById('remark-modal').classList.contains('open')) {
+                    closeRemarkModal();
+                    return;
+                }
+
+                if (document.getElementById('symbol-modal').classList.contains('open')) {
+                    closeModal();
+                    return;
+                }
+
                 closePanel();
-                closeModal();
             }
         });
 
@@ -1404,6 +1644,10 @@
 
         document.getElementById('symbol-modal').addEventListener('click', (e) => {
             if (e.target.id === 'symbol-modal') closeModal();
+        });
+
+        document.getElementById('remark-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'remark-modal') closeRemarkModal();
         });
 
         fetchData();
